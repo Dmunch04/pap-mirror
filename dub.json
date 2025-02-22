@@ -1,0 +1,12 @@
+{
+	"authors": [
+		"munchii"
+	],
+	"copyright": "Copyright © 2025, munchii",
+	"dependencies": {
+		"cli-d": "~>0.1.1"
+	},
+	"description": "General-purpose, extendable and versatile build system.",
+	"license": "MIT",
+	"name": "pap"
+}
