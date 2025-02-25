@@ -1,6 +1,6 @@
-import std.stdio;
+import pap;
 
-void main()
+int main(string[] args)
 {
-	writeln("Edit source/app.d to start your project.");
+    return run(args[1..$]);
 }

@@ -1,0 +1,35 @@
+configurations:
+  - name: Build Dub Project
+    trigger:
+      cmd:
+        - name: build # pap cmd build
+      job:
+        - name: Generate Language Files
+          when: complete # (complete|failed|started|canceled|skipped)?
+    flow:
+      steps:
+        - name: Update dependencies
+          run: dub upgrade
+
+        - name: Build executable
+          run: dub build --force
+
+        - name: Generate documentations
+          uses: pap/docgen
+          with:
+            source-dir: /source
+            out-dir: /docs
+
+  - name: Generate Language Files
+    trigger:
+      watch:
+        - file: data/languages.yml
+      cmd:
+        - name: gen-lang
+    flow:
+      steps:
+        - name: Clear old language files
+          run: rm -rf ./source/languages
+
+        - name: Generate language files
+          run: python3 ./scripts/gen.py
