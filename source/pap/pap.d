@@ -4,12 +4,13 @@ import dyaml;
 
 import pap.constant;
 import pap.cli;
-import pap.config.configurations : ConfigurationsConfig, constructConfig;
+import pap.config.stages;
+import pap.util.mapper;
 
 public class PapCLI
 {
     private CLIConfig config;
-    private ConfigurationsConfig configurations;
+    private StagesConfig stages;
 
     this(CLIConfig config)
     {
@@ -37,23 +38,29 @@ public class PapCLI
             return false;
         }
 
-        configurations = constructConfig(root);
-        writefln("config1 name: %s", configurations.configurations[0].name);
-        writefln("config2 name: %s", configurations.configurations[1].name);
-
-        writefln("config1 trigger-cmd: %s", configurations.configurations[0].triggers.cmd[0].name);
-        writefln("config1 trigger-job: %s %s", configurations.configurations[0].triggers.job[0].name, configurations.configurations[0].triggers.job[0].when);
-
-        writefln("config2 trigger-watch: %s", configurations.configurations[1].triggers.watch[0].file);
-        writefln("config2 trigger-cmd: %s", configurations.configurations[1].triggers.cmd[0].name);
-
-        foreach (config; configurations.configurations)
+        bool validated;
+        stages = map!StagesConfig(root, validated);
+        if (!validated)
         {
-            writefln("config name: %s", config.name);
-            foreach (step; config.flow.steps)
+            writefln("Config validation failed because of previous errors.");
+            return false;
+        }
+
+        if (!stages.validate())
+        {
+            writefln("Config validation failed because of previous errors.");
+            return false;
+        }
+
+        foreach (stage; stages.stages)
+        {
+            writefln("config name: %s", stage.name);
+            foreach (step; stage.flow.steps)
             {
                 writefln("step name: %s", step.name);
             }
+
+            writefln("");
         }
 
         return true;

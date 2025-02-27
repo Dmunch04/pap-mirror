@@ -1,9 +1,9 @@
-configurations:
+stages: # maybe rename to tasks?
   - name: Build Dub Project
     trigger:
       cmd:
-        - name: build # pap cmd build
-      job:
+        - name: build # pap cmd build || pap :build
+      stage:
         - name: Generate Language Files
           when: complete # (complete|failed|started|canceled|skipped)?
     flow:
@@ -15,6 +15,13 @@ configurations:
           run: dub build --force
 
         - name: Generate documentations
+          require:
+            - flag:
+                name: --force-docs
+            - condition: and # (and|or)
+              parent_stage: Build Dub Project
+              flag:
+                name: --docs
           uses: pap/docgen
           with:
             source-dir: /source
@@ -33,3 +40,33 @@ configurations:
 
         - name: Generate language files
           run: python3 ./scripts/gen.py
+
+  - name: Build Docker Image
+    trigger:
+      stage:
+        - name: Build Dub Project
+          when: complete
+    flow:
+      steps:
+        - name: Build image
+          run: docker build --no-cache -t munchii/pap-example:latest .
+
+  - name: Login to DockerHub
+    trigger:
+      stage:
+        - name: Build Docker Image
+          when: complete
+    flow:
+      steps:
+        - name: Login to DockerHub
+          run: echo ${{ env.DOCKERHUB_TOKEN }} | docker login -u ${{ env.DOCKERHUB_USER }} --password-stdin
+
+  - name: Deploy Docker Image
+    trigger:
+      stage:
+        - name: Build Docker Image
+          when: complete
+    flow:
+      steps:
+        - name: Deploy to DockerHub
+          run: docker push munchii/pap-example:latest

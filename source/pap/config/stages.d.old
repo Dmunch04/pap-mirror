@@ -1,0 +1,333 @@
+module pap.config.stages;
+
+import dyaml;
+
+import pap.extensions.yaml;
+
+public struct StagesConfig
+{
+    StageConfig[] stages;
+}
+
+public struct StageConfig
+{
+    /// The name of the stage. (Required)
+    string name;
+    /// The trigger configuration for the stage. (Optional)
+    StageTriggerConfig triggers;
+    /// The flow configuration for the stage. (Optional)
+    StageFlowConfig flow;
+}
+
+private string parse(ref StageConfig config, Node node)
+{
+    if (node.containsKey("name"))
+    {
+        config.name = node["name"].as!string;
+    }
+    else
+    {
+        return "Error: stage must have 'name' key.";
+    }
+
+    if (node.containsKey("triggers"))
+    {
+        StageTriggerConfig triggers;
+        string error = parse(triggers, node["triggers"]);
+        if (error != "")
+        {
+            return error;
+        }
+        config.triggers = triggers;
+    }
+
+    if (node.containsKey("flow"))
+    {
+        StageFlowConfig flow;
+        string error = parse(flow, node["flow"]);
+        if (error != "")
+        {
+            return error;
+        }
+        config.flow = flow;
+    }
+
+    return "";
+}
+
+public struct StageTriggerConfig
+{
+    /// The command invocable triggers for the stage. (Optional)
+    StageTriggerCmdConfig[] cmd;
+    /// The file/directory watch triggers for the stage. (Optional)
+    StageTriggerWatchConfig[] watch;
+    /// The stage triggers for the stage. (Optional)
+    StageTriggerStageConfig[] stage;
+}
+
+private string parse(ref StageTriggerConfig config, Node node)
+{
+    if (node.containsKey("cmd"))
+    {
+        foreach (Node trigger; node["cmd"])
+        {
+            StageTriggerCmdConfig cmd;
+            string error = parse(cmd, trigger);
+            if (error != "")
+            {
+                return error;
+            }
+            config.cmd ~= cmd;
+        }
+    }
+
+    if (node.containsKey("watch"))
+    {
+        foreach (Node trigger; node["watch"])
+        {
+            StageTriggerWatchConfig watch;
+            string error = parse(watch, trigger);
+            if (error != "")
+            {
+                return error;
+            }
+            config.watch ~= watch;
+        }
+    }
+
+    if (node.containsKey("stage"))
+    {
+        foreach (Node trigger; node["stage"])
+        {
+            StageTriggerStageConfig stage;
+            string error = parse(stage, trigger);
+            if (error != "")
+            {
+                return error;
+            }
+            config.stage ~= stage;
+        }
+    }
+
+    return "";
+}
+
+public struct StageTriggerCmdConfig
+{
+    /// The name of the command trigger. (Required)
+    string name;
+}
+
+private string parse(ref StageTriggerCmdConfig config, Node node)
+{
+    if (node.containsKey("name"))
+    {
+        config.name = node["name"].as!string;
+    }
+    else
+    {
+        return "Error: cmd trigger must have 'name' key.";
+    }
+
+    return "";
+}
+
+public struct StageTriggerWatchConfig
+{
+    /// The file to watch for changes. (Optional)
+    string file;
+    /// The directory to watch for changes. (Optional)
+    string directory;
+}
+
+private string parse(ref StageTriggerWatchConfig config, Node node)
+{
+    if (!node.containsKey("file") && !node.containsKey("directory"))
+    {
+        return "Error: watch trigger must have either 'file' or 'directory' key.";
+    }
+
+    if (node.containsKey("file"))
+    {
+        config.file = node["file"].as!string;
+    }
+
+    if (node.containsKey("directory"))
+    {
+        config.directory = node["directory"].as!string;
+    }
+
+    return "";
+}
+
+public struct StageTriggerStageConfig
+{
+    /// The name of the stage trigger. (Required)
+    string name;
+    /// The condition to trigger the stage. (Required)
+    string when;
+}
+
+private string parse(ref StageTriggerStageConfig config, Node node)
+{
+    if (node.containsKey("name"))
+    {
+        config.name = node["name"].as!string;
+    }
+    else
+    {
+        return "Error: stage trigger must have 'name' key.";
+    }
+
+    if (node.containsKey("when"))
+    {
+        config.when = node["when"].as!string;
+    }
+    else
+    {
+        return "Error: stage trigger must have 'when' key.";
+    }
+
+    return "";
+}
+
+public struct StageFlowConfig
+{
+    /// The steps of the flow. (Required)
+    StageFlowStepConfig[] steps;
+}
+
+private string parse(ref StageFlowConfig config, Node node)
+{
+    if (!node.containsKey("steps"))
+    {
+        return "Error: flow must have 'steps' key.";
+    }
+
+    foreach (Node step; node["steps"])
+    {
+        StageFlowStepConfig flowStep;
+        string error = parse(flowStep, step);
+        if (error != "")
+        {
+            return error;
+        }
+        config.steps ~= flowStep;
+    }
+
+    return "";
+}
+
+public struct StageFlowStepConfig
+{
+    /// The name of the step. (Required)
+    string name;
+    /// The command to run for the step. (Optional)
+    string run;
+
+    /// The require configuration for the step. (Optional)
+    StageFlowStepRequireConfig require;
+    /// The outside-defined action of the step. (Optional)
+    string uses;
+    /// The configuration for the step. (Optional)
+    string[string] withs;
+}
+
+private string parse(ref StageFlowStepConfig config, Node node)
+{
+    if (node.containsKey("name"))
+    {
+        config.name = node["name"].as!string;
+    }
+    else
+    {
+        return "Error: step must have 'name' key.";
+    }
+
+    if (node.containsKey("run"))
+    {
+        config.run = node["run"].as!string;
+    }
+
+    if (node.containsKey("require"))
+    {
+        StageFlowStepRequireConfig require;
+        string error = parse(require, node["require"]);
+        if (error != "")
+        {
+            return error;
+        }
+        config.require = require;
+    }
+
+    if (node.containsKey("uses"))
+    {
+        config.uses = node["uses"].as!string;
+    }
+
+    if (node.containsKey("with"))
+    {
+        config.withs = node["with"].asStringMap;
+    }
+
+    return "";
+}
+
+public struct StageFlowStepRequireConfig
+{
+    /// The condition to require the step. (Optional)
+    string condition;
+    /// The parent stage to require the step. (Optional)
+    string parentStage;
+    /// The parent step to require the step. (Optional)
+    string[] flags;
+}
+
+private string parse(ref StageFlowStepRequireConfig config, Node node)
+{
+    bool hasAny = false;
+
+    if (node.containsKey("condition"))
+    {
+        hasAny = true;
+        config.condition = node["condition"].as!string;
+    }
+
+    if (node.containsKey("parent_stage"))
+    {
+        hasAny = true;
+        config.parentStage = node["parent_stage"].as!string;
+    }
+
+    if (node.containsKey("flags"))
+    {
+        hasAny = true;
+        config.flags = node["flags"].asStringArray;
+    }
+
+    if (!hasAny)
+    {
+        return "Error: require must have at least one of 'condition', 'parent_stage', or 'flags' key.";
+    }
+
+    return "";
+}
+
+public void parse(ref StagesConfig config, Node root)
+{
+    foreach (Node node; root["stages"])
+    {
+        StageConfig stage;
+        string error = stage.parse(node);
+        if (error != "")
+        {
+            throw new Exception(error);
+        }
+        config.stages ~= stage;
+    }
+}
+
+public void validate(ref StagesConfig config)
+{
+
+}

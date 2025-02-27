@@ -1,0 +1,28 @@
+obj:
+  - key: test1
+    value: hello
+  - key: test2
+    value: world
+  - key: test3
+    value: yeet
+  - key: help me
+    something: yeet
+    #value: a
+
+project: yeet
+
+test:
+  some_val: 1
+  some_val2: 2
+  items:
+    - key: item1
+      value: yeet1
+    - key: item2
+      value: yeet2
+    - value: a
+  map:
+    item1: yeet1
+    item2: yeet2
+  map2:
+    0: yeet1
+    1: yeet2

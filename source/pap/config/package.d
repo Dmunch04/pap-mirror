@@ -1,3 +1,3 @@
 module pap.config;
 
-public import pap.config.configurations;
+public import pap.config.stages;
