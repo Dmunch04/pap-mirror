@@ -1,7 +1,41 @@
 /**
+ * Acknowledgements:
  * This file uses elements and techniques heavily inspired by the cli-d package by Sebastiaan de Schaetzen.
  * The code can by found at https://github.com/seeseemelk/cli-d
  */
+
+/++
+ + This module provides a way to map a YAML node from DYAML to a struct.
+ + Struct fields must be annotated with the `Field` attribute to be recognized by the mapper.
+ + Fields annotated with the `Required` attribute will be checked for existence.
+ + If a required field is missing, the mapper will write errors to stderr.
+ + 
+ + In it's current state, the mapper might be a bit limiting, and unable to handle all types and edgecases.
+ + Current known limitations:
+ + - The mapper only supports mapping to associative arrays with string keys and values of scalar types (this includes strings).
+ +   Any attempt at mapping to a struct or other complex types, will most likely throw errors.
+ + - The `Field` annotation must explicitly specify the name of the field in the YAML file.
+ +
+ + Example:
+ + ```
+ + struct MyConfig
+ + {
+ +     @Field("name")
+ +     @Required
+ +     string name;
+ +
+ +     @Field("age")
+ +     int age;
+ + }
+ +
+ + void main()
+ + {
+ +     auto root = Loader.fromFile("config.yml").load();
+ +     bool validated;
+ +     auto config = map!MyConfig(root, validated);
+ +     assert(validated, "Config validation failed");
+ + }
+ +/
 
 module pap.util.mapper;
 
@@ -24,12 +58,16 @@ public struct Field
     /// The name of the field in the YAML file.
     public string name;
 
-    this(string name)
+    /++
+     + Constructor for the `Field` attribute.
+     + Takes the name of the field, the way it should be presented in the YAML file.
+     +/
+    public this(string name)
     {
         this.name = name;
     }
 
-    bool equals(string arg) immutable
+    public bool equals(string arg) immutable
     {
         return name == arg;
     }
