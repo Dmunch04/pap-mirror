@@ -7,14 +7,15 @@ import dyaml;
 
 import pap.constant;
 import pap.cli;
-import pap.recipes.stages;
+import pap.recipes;
 import pap.util.mapper;
 import pap.flow;
 
 public class PapCLI
 {
     private CLIConfig config;
-    private StagesRecipe stages;
+    private ProjectRecipe project;
+    private StageRecipe[] stages;
 
     package StageTriggerWatchRecipe[] watchers;
     package string[string] commandMap;
@@ -48,17 +49,62 @@ public class PapCLI
         }
 
         bool validated;
-        this.stages = map!StagesRecipe(root, validated);
+        if (root.containsKey("project"))
+        {
+            this.project = map!ProjectRecipe(root["project"], validated);
+            if (!validated)
+            {
+                stderr.writeln("Config validation failed because of previous errors.");
+                return false;
+            }
+
+            if (!this.project.validate())
+            {
+                stderr.writeln("Config validation failed because of previous errors.");
+                return false;
+            }
+        }
+
+        validated = false;
+        StagesRecipe stagesRecipe = map!StagesRecipe(root, validated);
         if (!validated)
         {
             stderr.writeln("Config validation failed because of previous errors.");
             return false;
         }
 
-        if (!this.stages.validate())
+        if (!stagesRecipe.validate())
         {
             stderr.writeln("Config validation failed because of previous errors.");
             return false;
+        }
+        this.stages = stagesRecipe.stages;
+
+        if (this.project.includes.length > 0)
+        {
+            foreach (file; this.project.includes)
+            {
+                if (file.exists)
+                {
+                    Node fileRoot = Loader.fromFile(file).load();
+
+                    bool includeValidated;
+                    StagesRecipe includeStages = map!StagesRecipe(fileRoot, includeValidated);
+                    if (!includeValidated)
+                    {
+                        stderr.writeln("Config validation failed because of previous errors.");
+                        return false;
+                    }
+
+                    if (!includeStages.validate())
+                    {
+                        stderr.writeln("Config validation failed because of previous errors.");
+                        return false;
+                    }
+
+                    this.stages ~= includeStages.stages;
+                }
+            }
         }
 
         getWatchers();
@@ -69,7 +115,7 @@ public class PapCLI
 
     private void getWatchers()
     {
-        foreach (StageRecipe stage; this.stages.stages)
+        foreach (StageRecipe stage; this.stages)
         {
             if (stage.triggers.watch.length > 0)
             {
@@ -80,7 +126,7 @@ public class PapCLI
 
     private void createCommandMap()
     {
-        foreach (StageRecipe stage; this.stages.stages)
+        foreach (StageRecipe stage; this.stages)
         {
             if (stage.triggers.cmd.length > 0)
             {
@@ -109,7 +155,7 @@ public class PapCLI
         writefln("At %s", getcwd());
         writefln("Type 'help' for a list of available commands.");
 
-        FlowNode[] flow = createFlow(this.stages, this.stages.stages[0]);
+        FlowNode[] flow = createFlow(this.stages, this.stages[0]);
         foreach (FlowNode node; flow)
         {
             if (node.condition == FlowNodeCondition.ROOT)

@@ -1,3 +1,9 @@
+project:
+  name: pap-example
+  version: 0.1.0
+  include:
+    - .pap/some_workflow.yml # includes all stages from file
+
 stages: # maybe rename to tasks?
   - name: Build Dub Project
     trigger:

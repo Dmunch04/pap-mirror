@@ -39,6 +39,9 @@ public struct StageTriggerRecipe
     /// The stage triggers for the stage. (Optional)
     @Field("stage")
     StageTriggerStageRecipe[] stage;
+
+    // TODO: Git Trigger?
+    // more triggers?
 }
 
 public struct StageTriggerCmdRecipe

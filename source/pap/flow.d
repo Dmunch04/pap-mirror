@@ -34,7 +34,7 @@ public struct FlowNode
 }
 
 // Work in progress
-public FlowNode[] createFlow(StagesRecipe stages, StageRecipe root, FlowNode rootNode = FlowNode("", null, FlowNodeCondition.EMPTY))
+public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = FlowNode("", null, FlowNodeCondition.EMPTY))
 {
     FlowNode[] flow;
 
@@ -44,7 +44,7 @@ public FlowNode[] createFlow(StagesRecipe stages, StageRecipe root, FlowNode roo
         flow ~= rootNode;
     }
 
-    foreach (stage; stages.stages)
+    foreach (stage; stages)
     {
         if (stage.triggers.stage.length > 0)
         {

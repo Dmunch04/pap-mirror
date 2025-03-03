@@ -1,0 +1,9 @@
+stages:
+  - name: Stage From Another File
+    trigger:
+      stage: Deploy Docker Image
+      when: failed
+    flow:
+      steps:
+        - name: Hello
+          run: echo 'Hello, World!'
