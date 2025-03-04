@@ -4,8 +4,8 @@ import core.stdc.stdlib : EXIT_SUCCESS, EXIT_FAILURE;
 import std.stdio : writefln;
 import std.getopt;
 
-import clid;
-import argparse;
+//import clid;
+//import argparse;
 
 import pap.pap;
 import pap.constant;

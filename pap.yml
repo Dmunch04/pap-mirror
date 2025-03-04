@@ -56,3 +56,12 @@ stages:
       steps:
         - name: MIC-Yeet1
           run: echo "Yeet"
+          
+  - name: Build Release
+    trigger:
+      cmd:
+        - name: release
+    flow:
+      steps:
+        - name: Build
+          run: dub build --compiler=ldc2 -b release

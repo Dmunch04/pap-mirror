@@ -4,8 +4,6 @@
 	],
 	"copyright": "Copyright © 2025, munchii",
 	"dependencies": {
-		"argparse": "~>1.4.1",
-		"cli-d": "~>0.1.1",
 		"dyaml": "~>0.10.0"
 	},
 	"description": "General-purpose, extendable and versatile build system.",
