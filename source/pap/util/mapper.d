@@ -1,3 +1,6 @@
+// TODO: allow for `Field` attribute to be used without `name` field and use the struct field name instead.
+// TODO: allow for more type handling? This probably also needs some testing as I'm not sure what really works yet.
+
 /**
  * Acknowledgements:
  * This file uses elements and techniques heavily inspired by the cli-d package by Sebastiaan de Schaetzen.

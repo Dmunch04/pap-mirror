@@ -123,6 +123,10 @@ public struct StageFlowStepRequireRecipe
     string[] flags;
 }
 
+/++
+ + Validate the stages recipe.
+ + Returns `true` if no errors found, otherwise `false`.
+ +/
 public bool validate(StagesRecipe recipe)
 {
     import std.stdio : stderr;
