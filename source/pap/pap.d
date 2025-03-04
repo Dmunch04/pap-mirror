@@ -73,13 +73,6 @@ public class PapCLI
             return false;
         }
 
-        if (!stagesRecipe.validate())
-        {
-            stderr.writeln("Config validation failed because of previous errors.");
-            return false;
-        }
-        this.stages = stagesRecipe.stages;
-
         if (this.project.includes.length > 0)
         {
             foreach (file; this.project.includes)
@@ -96,16 +89,17 @@ public class PapCLI
                         return false;
                     }
 
-                    if (!includeStages.validate())
-                    {
-                        stderr.writeln("Config validation failed because of previous errors.");
-                        return false;
-                    }
-
-                    this.stages ~= includeStages.stages;
+                    stagesRecipe.stages ~= includeStages.stages;
                 }
             }
         }
+
+        if (!stagesRecipe.validate())
+        {
+            stderr.writeln("Config validation failed because of previous errors.");
+            return false;
+        }
+        this.stages = stagesRecipe.stages;
 
         getWatchers();
         createCommandMap();
@@ -151,22 +145,24 @@ public class PapCLI
         import std.string : strip;
         import std.file : getcwd;
 
+        FlowNode[] nodes = createFlow(this.stages, this.stages[0]);
+        FlowTree flow = createFlowTree(nodes, nodes[0]);
+        foreach (FlowTree child1; flow.children)
+        {
+            writefln(child1.stageName);
+            foreach (FlowTree child2; child1.children)
+            {
+                writefln(child2.stageName);
+                foreach (FlowTree child3; child2.children)
+                {
+                    writefln(child3.stageName);
+                }
+            }
+        }
+
         writefln("Entering pap CLI v%s-%s", VERSION, BUILD);
         writefln("At %s", getcwd());
         writefln("Type 'help' for a list of available commands.");
-
-        FlowNode[] flow = createFlow(this.stages, this.stages[0]);
-        foreach (FlowNode node; flow)
-        {
-            if (node.condition == FlowNodeCondition.ROOT)
-            {
-                writefln("%s =>", node.stageName);
-                continue;
-            }
-
-            writefln("%s -> %s : %s", node.parent.stageName, node.stageName, node.condition);
-            // do something
-        }
 
         string line;
         while (true)

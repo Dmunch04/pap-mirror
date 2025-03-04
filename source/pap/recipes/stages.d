@@ -137,10 +137,21 @@ public bool validate(StagesRecipe recipe)
         "and", "or"
     ];
 
+    string[] stageNames;
+
     if (recipe.stages.length > 0)
     {
         foreach (stage; recipe.stages)
         {
+            // TODO: step names?
+            if (stageNames.canFind(stage.name))
+            {
+                stderr.writefln("Cannot have stages with duplicate name '%s'", stage.name);
+                return false;
+            }
+
+            stageNames ~= stage.name;
+
             // Watch Trigger Validation
             if (stage.triggers.watch.length > 0)
             {

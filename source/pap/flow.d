@@ -4,7 +4,6 @@ import pap.recipes;
 
 public enum FlowNodeCondition
 {
-    EMPTY,
     ROOT,
     COMPLETE,
     FAILED,
@@ -13,7 +12,7 @@ public enum FlowNodeCondition
     SKIPPED
 }
 
-package FlowNodeCondition fromString(string condition)
+package FlowNodeCondition conditionFromString(string condition)
 {
     switch (condition)
     {
@@ -22,29 +21,38 @@ package FlowNodeCondition fromString(string condition)
         case "started": return FlowNodeCondition.STARTED;
         case "canceled": return FlowNodeCondition.CANCELED;
         case "skipped": return FlowNodeCondition.SKIPPED;
-        default: return FlowNodeCondition.EMPTY;
+        default: return FlowNodeCondition.ROOT;
     }
 }
 
-public struct FlowNode
+public class FlowNode
 {
     public string stageName;
-    public FlowNode *parent;
+    public FlowNode parent;
     public FlowNodeCondition condition;
+
+    package this(string stageName, FlowNode parent, FlowNodeCondition condition)
+    {
+        this.stageName = stageName;
+        this.parent = parent;
+        this.condition = condition;
+    }
 }
 
-// Work in progress
-public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = FlowNode("", null, FlowNodeCondition.EMPTY))
+public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = null)
 {
+    import std.algorithm : cmp;
+    import std.stdio : writeln, writefln;
+
     FlowNode[] flow;
 
-    if (rootNode.condition == FlowNodeCondition.EMPTY)
+    if (rootNode is null)
     {
-        rootNode = FlowNode(root.name, null, FlowNodeCondition.ROOT);
+        rootNode = new FlowNode(root.name, null, FlowNodeCondition.ROOT);
         flow ~= rootNode;
     }
 
-    foreach (stage; stages)
+    foreach (StageRecipe stage; stages)
     {
         if (stage.triggers.stage.length > 0)
         {
@@ -52,7 +60,7 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
             {
                 if (trigger.name == root.name)
                 {
-                    FlowNode node = FlowNode(stage.name, &rootNode, fromString(trigger.when));
+                    FlowNode node = new FlowNode(stage.name, rootNode, conditionFromString(trigger.when));
                     flow ~= node;
 
                     FlowNode[] children = createFlow(stages, stage, node);
@@ -63,4 +71,38 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
     }
 
     return flow;
+}
+
+public FlowNode[] getDirectChildren(FlowNode[] nodes, FlowNode parent)
+{
+    FlowNode[] children;
+
+    foreach (FlowNode node; nodes)
+    {
+        if (node.parent == parent)
+        {
+            children ~= node;
+        }
+    }
+
+    return children;
+}
+
+public struct FlowTree
+{
+    public string stageName;
+    public FlowNodeCondition condition;
+    public FlowTree[] children;
+}
+
+public FlowTree createFlowTree(FlowNode[] nodes, FlowNode parent)
+{
+    FlowTree[] children;
+    foreach (FlowNode node; nodes.getDirectChildren(parent))
+    {
+        children ~= createFlowTree(nodes, node);
+    }
+
+    FlowTree tree = FlowTree(parent.stageName, parent.condition, children);
+    return tree;
 }
