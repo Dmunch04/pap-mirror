@@ -146,6 +146,11 @@ public class PapCLI
         import std.file : getcwd;
 
         FlowNode[] nodes = createFlow(this.stages, this.stages[0]);
+        foreach (node; nodes)
+        {
+            writefln(node.toString);
+        }
+
         FlowTree flow = createFlowTree(nodes, nodes[0]);
         foreach (FlowTree child1; flow.children)
         {

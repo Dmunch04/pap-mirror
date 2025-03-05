@@ -56,15 +56,42 @@ public class FlowNode
         this.parent = parent;
         this.condition = condition;
     }
+
+    override string toString()
+    {
+        import std.conv : to;
+
+        string parentName;
+        if (parent !is null)
+        {
+            parentName = parent.stageName;
+        }
+        else
+        {
+            parentName = "ROOT";
+        }
+
+        return parentName ~ " -> " ~ stageName ~ " IF " ~ condition.to!string;
+    }
 }
 
 /++
  + Creates a linear flow.
  + It takes in all the stage recipes and the root stage recipe to base the flow on.
  +/
-public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = null)
+public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = null, FlowNode[] flow = null)
 {
-    FlowNode[] flow;
+    // TODO: I'm not really sure if this is working as intended after allowing for recursive nodes (node 1 can be triggered by node 2 and v.v.)
+    // So far it seems to be working alright? I'm pretty sure 'pap.yml.old' is producing the same output as before (should probably test to be sure).
+    // The new 'pap.yml' produces:
+    // ROOT -> Stage 1 IF ROOT (entrypoint)
+    // Stage 1 -> Stage 2 IF FAILED
+    // Stage 2 -> Stage 1 IF COMPLETE
+
+    if (flow is null)
+    {
+        flow = [];
+    }
 
     if (rootNode is null)
     {
@@ -83,16 +110,48 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
                 if (trigger.name == root.name)
                 {
                     FlowNode node = new FlowNode(stage.name, rootNode, conditionFromString(trigger.when));
+                    if (flow.hasNode(node)) return flow;
                     flow ~= node;
 
-                    FlowNode[] children = createFlow(stages, stage, node);
-                    flow ~= children;
+                    FlowNode[] children = createFlow(stages, stage, node, flow);
+                    foreach (FlowNode child; children)
+                    {
+                        if (!flow.hasNode(child))
+                        {
+                            flow ~= child;
+                        }
+                    }
                 }
             }
         }
     }
 
     return flow;
+}
+
+private bool hasNode(FlowNode[] nodes, FlowNode node)
+{
+    foreach (FlowNode child; nodes)
+    {
+        if (child.parent !is null && node.parent !is null)
+        {
+            if (child.parent.stageName == node.parent.stageName
+                && child.stageName == node.stageName
+                && child.condition == node.condition)
+            {
+                return true;
+            }
+        }
+        else if (child.parent is null || node.parent is null)
+        {
+            if (child.stageName == node.stageName && child.condition == node.condition)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 /++

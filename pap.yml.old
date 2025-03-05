@@ -1,0 +1,67 @@
+stages:
+  - name: Root Stage
+    flow:
+      steps:
+        - name: Yeet
+          run: echo "Yeet"
+          
+  - name: Direct Child 1
+    trigger:
+      stage:
+        - name: Root Stage
+          when: complete
+    flow:
+      steps:
+        - name: DC-Yeet1
+          run: echo "Yeet"
+          
+  - name: Direct Child 2
+    trigger:
+      stage:
+        - name: Root Stage
+          when: started
+    flow:
+      steps:
+        - name: DC-Yeet2
+          run: echo "Yeet"
+          
+  - name: Indirect Child 1
+    trigger:
+      stage:
+        - name: Direct Child 1
+          when: failed
+    flow:
+      steps:
+        - name: IC-Yeet1
+          run: echo "Yeet"
+          
+  - name: Indirect Indirect Child 1
+    trigger:
+      stage:
+        - name: Indirect Child 1
+          when: complete
+    flow:
+      steps:
+        - name: IIC-Yeet1
+          run: echo "Yeet"
+          
+  - name: Mixed Indirect Child 1
+    trigger:
+      stage:
+        - name: Direct Child 1
+          when: complete
+        - name: Direct Child 2
+          when: skipped
+    flow:
+      steps:
+        - name: MIC-Yeet1
+          run: echo "Yeet"
+          
+  - name: Build Release
+    trigger:
+      cmd:
+        - name: release
+    flow:
+      steps:
+        - name: Build
+          run: dub build --compiler=ldc2 -b release
