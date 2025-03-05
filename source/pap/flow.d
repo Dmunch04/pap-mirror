@@ -78,6 +78,17 @@ public class FlowNode
 /++
  + Creates a linear flow.
  + It takes in all the stage recipes and the root stage recipe to base the flow on.
+ + 
+ + Not really linear anymore now that it supports recursion.
+ + And on that note, how would that even work? Take this example
+ + 2 stages are defined; a main stage for building the app, and a recovery stage if the main stage fails.
+ + Stage 1 is being triggered by command (:build) or Stage 2 if 'complete'.
+ + Stage 2 is being triggered by Stage 1 if 'failed'.
+ + ENTRY -> Stage 1 triggered -> Building... -> Error Occurred -> Stage 2 triggered -> ?
+ + How does stage 1 knows it should be triggered since that's at least 1 step behind in the flow
+ + ([ROOT -> Stage 1, Stage 1 -> Stage 2, Stage 2 -> Stage 1])
+ +                           ^^^^                ^^^^
+ +   The step that should be triggered     The step we're at
  +/
 public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode rootNode = null, FlowNode[] flow = null)
 {
