@@ -4,7 +4,8 @@
 	],
 	"copyright": "Copyright © 2025, munchii",
 	"dependencies": {
-		"dyaml": "~>0.10.0"
+		"dyaml": "~>0.10.0",
+		"ymlmap": "~>0.1.0"
 	},
 	"description": "General-purpose, extendable and versatile build system.",
 	"license": "MIT",

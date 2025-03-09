@@ -1,6 +1,6 @@
 module pap.recipes.project;
 
-import pap.util.mapper;
+import ymlmap;
 
 public struct ProjectRecipe
 {

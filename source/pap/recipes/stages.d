@@ -1,6 +1,6 @@
 module pap.recipes.stages;
 
-import pap.util.mapper;
+import ymlmap;
 
 public struct StagesRecipe
 {

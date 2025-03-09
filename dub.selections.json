@@ -4,6 +4,7 @@
 		"argparse": "1.4.1",
 		"cli-d": "0.1.1",
 		"dyaml": "0.10.0",
-		"tinyendian": "0.2.0"
+		"tinyendian": "0.2.0",
+		"ymlmap": "0.1.0"
 	}
 }

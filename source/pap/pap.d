@@ -4,11 +4,11 @@ import std.stdio : stderr, writefln;
 import core.stdc.stdlib : EXIT_SUCCESS, EXIT_FAILURE;
 
 import dyaml;
+import ymlmap;
 
 import pap.constant;
 import pap.cli;
 import pap.recipes;
-import pap.util.mapper;
 import pap.flow;
 
 /++
