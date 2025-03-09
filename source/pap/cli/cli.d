@@ -4,15 +4,24 @@ import core.stdc.stdlib : EXIT_SUCCESS, EXIT_FAILURE;
 import std.stdio : writefln;
 import std.getopt;
 
-//import clid;
-//import argparse;
-
 import pap.pap;
 import pap.constant;
 import pap.cli.config;
 
-const string USAGE = "pap [command] [options]";
+private const string USAGE = "pap [command] [options]";
 
+/++
+ + The ProgramOptions struct is used to store the options that are passed to the program through the CLI.
+ +/
+public struct ProgramOptions
+{
+    public bool verbose;
+    public bool detach;
+}
+
+/++
+ + The getCLI function is the entry point for the CLI. It parses the arguments and calls the appropriate subcommand.
+ +/
 public int getCLI(string[] args)
 {
     import std.algorithm : startsWith;
@@ -58,14 +67,14 @@ public int getCLI(string[] args)
     return EXIT_SUCCESS;
 }
 
-public int versionSubcommand(string[] args)
+private int versionSubcommand(string[] args)
 {
     writefln("pap v%s-%s", VERSION, BUILD);
 
     return EXIT_SUCCESS;
 }
 
-public int upSubcommand(string[] args)
+private int upSubcommand(string[] args)
 {
     bool verbose = false;
     bool detach = false;
@@ -87,11 +96,14 @@ public int upSubcommand(string[] args)
     return up(config);
 }
 
-public int downSubcommand(string[] args)
+private int downSubcommand(string[] args)
 {
     return EXIT_SUCCESS;
 }
 
+/++
+ + The cmdSubcommand function is used to execute a command that is passed as an argument to the CLI.
+ +/
 public int cmdSubcommand(string[] args)
 {
     writefln(args[0]);

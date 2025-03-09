@@ -11,9 +11,13 @@ import pap.recipes;
 import pap.util.mapper;
 import pap.flow;
 
+/++
+ + The PapCLI class handles the CLI commands. It is responsible for loading the configuration file and
+ + handling the user input.
+ +/
 public class PapCLI
 {
-    private CLIConfig config;
+    private ProgramOptions options;
     private ProjectRecipe project;
     private StageRecipe[] stages;
 
@@ -22,9 +26,9 @@ public class PapCLI
 
     private bool initialized;
 
-    package this(CLIConfig config)
+    package this(ProgramOptions options)
     {
-        this.config = config;
+        this.options = options;
 
         this.initialized = tryLoadConfig();
     }
@@ -139,6 +143,9 @@ public class PapCLI
         }
     }
 
+    /++
+     + The upLoop method is the main loop of the CLI. It handles the user input and executes the commands.
+     +/
     public void upLoop()
     {
         import std.stdio : readln;
@@ -253,28 +260,11 @@ public class PapCLI
 
         return false;
     }
-
-    private string getEnv(string key)
-    {
-        import std.process : environment;
-
-        return environment.get(key);
-    }
-
-    private string getSecret(string key)
-    {
-        return null;
-    }
-
-    private bool setSecret(string key, string value)
-    {
-        return true;
-    }
 }
 
-public int up(CLIConfig config)
+public int up(ProgramOptions options)
 {
-    auto cli = new PapCLI(config);
+    auto cli = new PapCLI(options);
     if (!cli.initialized)
     {
         return EXIT_FAILURE;
@@ -290,7 +280,7 @@ public int runStageCommand(string cmd, string[string] cmdMap = null)
 {
     if (cmdMap == null)
     {
-        auto cli = new PapCLI(CLIConfig(false, false));
+        auto cli = new PapCLI(ProgramOptions(false, false));
         if (!cli.initialized)
         {
             return EXIT_FAILURE;
