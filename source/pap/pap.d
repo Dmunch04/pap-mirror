@@ -253,6 +253,23 @@ public class PapCLI
 
         return false;
     }
+
+    private string getEnv(string key)
+    {
+        import std.process : environment;
+
+        return environment.get(key);
+    }
+
+    private string getSecret(string key)
+    {
+        return null;
+    }
+
+    private bool setSecret(string key, string value)
+    {
+        return true;
+    }
 }
 
 public int up(CLIConfig config)

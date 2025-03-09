@@ -4,7 +4,7 @@ import pap.util.mapper;
 
 public struct StagesRecipe
 {
-    /// The stages Recipeuration. (Required)
+    /// The stages recipe. (Required)
     @Field("stages")
     @Required
     StageRecipe[] stages;
@@ -17,11 +17,15 @@ public struct StageRecipe
     @Required
     string name;
 
-    /// The trigger Recipeuration for the stage. (Optional)
+    /// The trigger recipe for the stage. (Optional)
     @Field("trigger")
     StageTriggerRecipe triggers;
 
-    /// The flow Recipeuration for the stage. (Optional)
+    /// The container recipe for the stage. (Optional)
+    @Field("container")
+    StageContainerRecipe container;
+
+    /// The flow recipe for the stage. (Optional)
     @Field("flow")
     StageFlowRecipe flow;
 }
@@ -76,6 +80,32 @@ public struct StageTriggerStageRecipe
     string when;
 }
 
+
+public struct StageContainerRecipe
+{
+    /// The name of the container orchestration tool to be used. Can be 'docker' or 'podman'
+    @Field("engine")
+    @Required
+    string engine;
+
+    /// The image of the container. (Required)
+    @Field("image")
+    @Required
+    string image;
+
+    /// The environment variables for the container. (Optional)
+    @Field("environment")
+    string[string] environment;
+    
+    /// The hostname for the container. (Optional)
+    @Field("hostname")
+    string hostname;
+    
+    /// The network for the container. (Optional)
+    @Field("network")
+    string network;
+}
+
 public struct StageFlowRecipe
 {
     /// The steps of the flow. (Required)
@@ -95,7 +125,7 @@ public struct StageFlowStepRecipe
     @Field("run")
     string run;
 
-    /// The require Recipeuration for the step. (Optional)
+    /// The require recipe for the step. (Optional)
     @Field("require")
     StageFlowStepRequireRecipe require;
 
@@ -103,7 +133,7 @@ public struct StageFlowStepRecipe
     @Field("uses")
     string uses;
 
-    /// The Recipeuration for the step. (Optional)
+    /// The map of inputs for the `uses` action. (Optional)
     @Field("with")
     string[string] withs;
 }
@@ -137,6 +167,10 @@ public bool validate(StagesRecipe recipe)
         "canceled", "skipped"
     ];
 
+    const STAGE_CONTAINER_ENGINE = [
+        "docker", "podman"
+    ];
+    
     const STEP_REQUIRE_CONDITION = [
         "and", "or"
     ];
@@ -203,6 +237,13 @@ public bool validate(StagesRecipe recipe)
                         return false;
                     }
                 }
+            }
+            
+            // Container Validation
+            if (!STAGE_CONTAINER_ENGINE.canFind(stage.container.engine))
+            {
+                stderr.writefln("Container Engine for '%s' must be either 'docker' or 'podman'", stage.name);
+                return false;
             }
         }
     }
