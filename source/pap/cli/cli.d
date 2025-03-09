@@ -6,7 +6,6 @@ import std.getopt;
 
 import pap.pap;
 import pap.constant;
-import pap.cli.config;
 
 private const string USAGE = "pap [command] [options]";
 
@@ -89,11 +88,11 @@ private int upSubcommand(string[] args)
         defaultGetoptPrinter("pap up [options]", opts.options);
     }
 
-    CLIConfig config;
-    config.verbose = verbose;
-    config.detach = detach;
+    ProgramOptions options;
+    options.verbose = verbose;
+    options.detach = detach;
 
-    return up(config);
+    return up(options);
 }
 
 private int downSubcommand(string[] args)
@@ -106,7 +105,7 @@ private int downSubcommand(string[] args)
  +/
 public int cmdSubcommand(string[] args)
 {
-    writefln(args[0]);
+    runStageCommand(args[0], args[1..$]);
 
     return EXIT_SUCCESS;
 }

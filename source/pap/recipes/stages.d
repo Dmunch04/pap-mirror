@@ -96,11 +96,11 @@ public struct StageContainerRecipe
     /// The environment variables for the container. (Optional)
     @Field("environment")
     string[string] environment;
-    
+
     /// The hostname for the container. (Optional)
     @Field("hostname")
     string hostname;
-    
+
     /// The network for the container. (Optional)
     @Field("network")
     string network;
@@ -170,11 +170,12 @@ public bool validate(StagesRecipe recipe)
     const STAGE_CONTAINER_ENGINE = [
         "docker", "podman"
     ];
-    
+
     const STEP_REQUIRE_CONDITION = [
         "and", "or"
     ];
 
+    bool failed;
     string[] stageNames;
 
     if (recipe.stages.length > 0)
@@ -185,7 +186,7 @@ public bool validate(StagesRecipe recipe)
             if (stageNames.canFind(stage.name))
             {
                 stderr.writefln("Cannot have stages with duplicate name '%s'", stage.name);
-                return false;
+                failed = true;
             }
 
             stageNames ~= stage.name;
@@ -198,12 +199,12 @@ public bool validate(StagesRecipe recipe)
                     if (watch.file != "" && watch.directory != "")
                     {
                         stderr.writefln("Watch Trigger for '%s' must only have a file or a directory, not both!", stage.name);
-                        return false;
+                        failed = true;
                     }
                     else if (watch.file == "" && watch.directory == "")
                     {
                         stderr.writefln("Watch Trigger for '%s' must either have a file or a directory!", stage.name);
-                        return false;
+                        failed = true;
                     }
                 }
             }
@@ -216,12 +217,12 @@ public bool validate(StagesRecipe recipe)
                     if (stageTrigger.name == "")
                     {
                         stderr.writefln("Stage Trigger for '%s' must have a name!", stage.name);
-                        return false;
+                        failed = true;
                     }
                     else if (!STAGE_TRIGGER_WHEN.canFind(stageTrigger.when))
                     {
                         stderr.writefln("Stage Trigger for '%s' must have a valid when condition!", stage.name);
-                        return false;
+                        failed = true;
                     }
                 }
             }
@@ -234,19 +235,19 @@ public bool validate(StagesRecipe recipe)
                     if (step.require.condition != "" && !STEP_REQUIRE_CONDITION.canFind(step.require.condition))
                     {
                         stderr.writefln("Step Require for '%s' must have a valid condition!", step.name);
-                        return false;
+                        failed = true;
                     }
                 }
             }
-            
+
             // Container Validation
-            if (!STAGE_CONTAINER_ENGINE.canFind(stage.container.engine))
+            if (stage.container.engine != "" && !STAGE_CONTAINER_ENGINE.canFind(stage.container.engine))
             {
                 stderr.writefln("Container Engine for '%s' must be either 'docker' or 'podman'", stage.name);
-                return false;
+                failed = true;
             }
         }
     }
 
-    return true;
+    return !failed;
 }

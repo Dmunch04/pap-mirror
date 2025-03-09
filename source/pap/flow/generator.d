@@ -1,4 +1,4 @@
-module pap.flow;
+module pap.flow.generator;
 
 import pap.recipes;
 
@@ -57,7 +57,7 @@ public class FlowNode
         this.condition = condition;
     }
 
-    override string toString()
+    override string toString() const
     {
         import std.conv : to;
 
@@ -78,7 +78,7 @@ public class FlowNode
 /++
  + Creates a linear flow.
  + It takes in all the stage recipes and the root stage recipe to base the flow on.
- + 
+ +
  + Not really linear anymore now that it supports recursion.
  + And on that note, how would that even work? Take this example
  + 2 stages are defined; a main stage for building the app, and a recovery stage if the main stage fails.

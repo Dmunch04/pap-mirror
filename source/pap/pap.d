@@ -152,26 +152,6 @@ public class PapCLI
         import std.string : strip;
         import std.file : getcwd;
 
-        FlowNode[] nodes = createFlow(this.stages, this.stages[0]);
-        foreach (node; nodes)
-        {
-            writefln(node.toString);
-        }
-
-        FlowTree flow = createFlowTree(nodes, nodes[0]);
-        foreach (FlowTree child1; flow.children)
-        {
-            writefln(child1.stageName);
-            foreach (FlowTree child2; child1.children)
-            {
-                writefln(child2.stageName);
-                foreach (FlowTree child3; child2.children)
-                {
-                    writefln(child3.stageName);
-                }
-            }
-        }
-
         writefln("Entering pap CLI v%s-%s", VERSION, BUILD);
         writefln("At %s", getcwd());
         writefln("Type 'help' for a list of available commands.");
@@ -262,6 +242,9 @@ public class PapCLI
     }
 }
 
+/++
+ + The up function is the entry point for the 'up' command. It initializes the CLI and starts the main loop.
+ +/
 public int up(ProgramOptions options)
 {
     auto cli = new PapCLI(options);
@@ -276,9 +259,12 @@ public int up(ProgramOptions options)
     return EXIT_SUCCESS;
 }
 
-public int runStageCommand(string cmd, string[string] cmdMap = null)
+/++
+ + The runStageCommand function is a helper function that can be used to run a stage command from the CLI.
+ +/
+public int runStageCommand(string cmd, string[] args, StageRecipe[] stages = null, string[string] cmdMap = null)
 {
-    if (cmdMap == null)
+    if (stages is null || cmdMap is null)
     {
         auto cli = new PapCLI(ProgramOptions(false, false));
         if (!cli.initialized)
@@ -286,6 +272,7 @@ public int runStageCommand(string cmd, string[string] cmdMap = null)
             return EXIT_FAILURE;
         }
 
+        stages = cli.stages;
         cmdMap = cli.commandMap;
     }
 
@@ -295,6 +282,21 @@ public int runStageCommand(string cmd, string[string] cmdMap = null)
         return EXIT_FAILURE;
     }
 
+    StageRecipe entryStage;
+    foreach (stage; stages)
+    {
+        if (stage.name == cmdMap[cmd])
+        {
+            entryStage = stage;
+            break;
+        }
+    }
+
     // do something
+    FlowNode[] nodes = createFlow(stages, entryStage);
+    FlowTree flow = createFlowTree(nodes, nodes[0]);
+
+    writefln(flow.stageName);
+
     return EXIT_SUCCESS;
 }
