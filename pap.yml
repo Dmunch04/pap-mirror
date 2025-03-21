@@ -1,19 +1,20 @@
 project:
   name: pap
   version: 0.1.0-beta
-  
+
+# stage tree chart: https://statik.munchii.me/img/:f5e35ec9-faea-4637-81eb-b677a6a81a4b
 stages:
   - name: Stage 1
     trigger:
       stage:
-        - name: Stage 2
+        - name: Stage 1 Retry
           when: complete
     flow:
       steps:
         - name: Build
           run: dub build --compiler=ldc2 -b release
 
-  - name: Stage 2
+  - name: Stage 1 Retry
     trigger:
       stage:
         - name: Stage 1
@@ -22,3 +23,123 @@ stages:
       steps:
         - name: Retry Stage 1
           run: echo "Retrying Stage 1..."
+          
+  - name: Stage 2
+    trigger:
+      stage:
+        - name: Stage 1
+          when: started
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 3
+    trigger:
+      stage:
+        - name: Stage 1
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 4
+    trigger:
+      stage:
+        - name: Stage 1
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 5
+    trigger:
+      stage:
+        - name: Stage 2
+          when: started
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 6
+    trigger:
+      stage:
+        - name: Stage 2
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 7
+    trigger:
+      stage:
+        - name: Stage 2
+          when: failed
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 8
+    trigger:
+      stage:
+        - name: Stage 3
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 9
+    trigger:
+      stage:
+        - name: Stage 3
+          when: skipped
+        - name: Stage 4
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 10
+    trigger:
+      stage:
+        - name: Stage 5
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 11
+    trigger:
+      stage:
+        - name: Stage 8
+          when: skipped
+        - name: Stage 9
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."
+          
+  - name: Stage 12
+    trigger:
+      stage:
+        - name: Stage 6
+          when: complete
+        - name: Stage 7
+          when: complete
+        - name: Stage 10
+          when: complete
+        - name: Stage 11
+          when: complete
+    flow:
+      steps:
+        - name: Do something
+          run: echo "doing something..."

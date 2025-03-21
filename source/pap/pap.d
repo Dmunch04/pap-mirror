@@ -148,6 +148,19 @@ public class PapCLI
      +/
     public void upLoop()
     {
+        import std.algorithm : each;
+        import std.stdio : writeln;
+
+        FlowNode[] nodes = createFlow(stages, stages[0]);
+        //nodes.each!(n => writeln(n.toString()));
+        foreach (n; nodes)
+        {
+            writeln(n.toString);
+        }
+        writeln();
+        FlowTree tree = createFlowTree(nodes, nodes[1]);
+        writeln(tree.children[0].stageName);
+
         import std.stdio : readln;
         import std.string : strip;
         import std.file : getcwd;

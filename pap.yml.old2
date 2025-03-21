@@ -1,0 +1,24 @@
+project:
+  name: pap
+  version: 0.1.0-beta
+  
+stages:
+  - name: Stage 1
+    trigger:
+      stage:
+        - name: Stage 2
+          when: complete
+    flow:
+      steps:
+        - name: Build
+          run: dub build --compiler=ldc2 -b release
+
+  - name: Stage 2
+    trigger:
+      stage:
+        - name: Stage 1
+          when: failed
+    flow:
+      steps:
+        - name: Retry Stage 1
+          run: echo "Retrying Stage 1..."
