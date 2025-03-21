@@ -98,6 +98,9 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
     // ROOT -> Stage 1 IF ROOT (entrypoint)
     // Stage 1 -> Stage 2 IF FAILED
     // Stage 2 -> Stage 1 IF COMPLETE
+    // 
+    // we don't actually want this to be "recursive" or non-linear; we want it to be linear. we don't want to travel backwards.
+    // instead we want to only move "forward" => forget this. explained below
 
     if (flow is null)
     {
@@ -183,6 +186,53 @@ public FlowNode[] getDirectChildren(FlowNode[] nodes, FlowNode parent)
     }
 
     return children;
+}
+
+public bool hasRecursion(FlowNode[] nodes)
+{
+    FlowNode root = nodes[0];
+    if (root.condition != FlowNodeCondition.ROOT)
+    {
+        root = null;
+    
+        foreach (node; nodes)
+        {
+            if (node.condition == FlowNodeCondition.ROOT)
+            {
+                root = node;
+            }
+        }
+        
+        if (root is null)
+        {
+            assert(0, "FATAL: something is wrong. could not find root node");
+        }
+    }
+    
+    // current idea: keep the "recursive" or backwards flow thing and then use this function to check it.
+    // we can then either give a warning and skip it when we reach it, or find a good way to allow it.
+    // perhaps it's possible for us to jump backwards. the only concern i have is the other child processes that depends on it.
+    // STAGE1
+    //        (complete) -> STAGE2 => still waiting
+    //        (started)  -> STAGE3 => already begun - does this matter?
+    //        (failed)   -> STAGE1-RETRY
+    //                                    (complete) <- STAGE1
+    // 
+    // ^^ so let's say STAGE1 fails the first time. STAGE2 won't be triggered since it's waiting for STAGE1 to be completed.
+    // STAGE3 will be triggered since STAGE1 had started, and STAGE1-RETRY will be started because STAGE1 failed.
+    // this means that STAGE3 is now running and continueing down the flow/levels while STAGE2 is stuck waiting for STAGE1 which is now retrying
+    // the current setup is meant to go down the tree, level by level, and execute/run the stages in parallel. however STAGE3 will now be ahead
+    // but of course that technique wouldn't have worked if we had a super long and a super short stage. the short one would be done before the long one,
+    // and therefor have to wait anyway. so perhaps this is acceptable. so the above would be okay. however it's important to keep track of which stages
+    // has already been started (no longer pending) so it isn't triggered twice by a delayed stage completing. now of course in this instance STAGE1 will be triggered
+    // until successful. so perhaps unless the state is PENDING or FAILED it shouldn't be triggered again? hmm
+    // 
+    // STAGE1:       PENDING => STARTED => FAILED  => ??????? => ??????? => STARTED => ...
+    // STAGE2:       PENDING => PENDING => PENDING => PENDING => PENDING => PENDING => PENDING
+    // STAGE3:       PENDING => PENDING => STARTED => ...
+    // STAGE1-RETRY: PENDING => PENDING => PENDING => STARTED => COMPLETE
+    
+    return false;
 }
 
 /++
