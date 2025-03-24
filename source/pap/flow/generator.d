@@ -44,15 +44,15 @@ package FlowNodeCondition conditionFromString(string condition)
 public class FlowNode
 {
     /// The name of the defined stage this node represents
-    public string stageName;
+    public string stageId;
     /// The parent node of this node. This is the node the `condition` will be checked on
     public FlowNode parent;
     /// The condition for this node to be triggered. The condition is checked on the `parent` node
     public FlowNodeCondition condition;
 
-    package this(string stageName, FlowNode parent, FlowNodeCondition condition)
+    package this(string stageId, FlowNode parent, FlowNodeCondition condition)
     {
-        this.stageName = stageName;
+        this.stageId = stageId;
         this.parent = parent;
         this.condition = condition;
     }
@@ -64,14 +64,14 @@ public class FlowNode
         string parentName;
         if (parent !is null)
         {
-            parentName = parent.stageName;
+            parentName = parent.stageId;
         }
         else
         {
             parentName = "ROOT";
         }
 
-        return parentName ~ " -> " ~ stageName ~ " IF " ~ condition.to!string;
+        return parentName ~ " -> " ~ stageId ~ " IF " ~ condition.to!string;
     }
 }
 
@@ -109,21 +109,21 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
 
     if (rootNode is null)
     {
-        rootNode = new FlowNode(root.name, null, FlowNodeCondition.ROOT);
+        rootNode = new FlowNode(root.id, null, FlowNodeCondition.ROOT);
         flow ~= rootNode;
     }
 
     foreach (StageRecipe stage; stages)
     {
-        if (stage.name == root.name) continue;
+        if (stage.id == root.id) continue;
 
         if (stage.triggers.stage.length > 0)
         {
             foreach (trigger; stage.triggers.stage)
             {
-                if (trigger.name == root.name)
+                if (trigger.id == root.id)
                 {
-                    FlowNode node = new FlowNode(stage.name, rootNode, conditionFromString(trigger.when));
+                    FlowNode node = new FlowNode(stage.id, rootNode, conditionFromString(trigger.when));
                     if (flow.hasNode(node)) return flow;
                     flow ~= node;
 
@@ -149,8 +149,8 @@ private bool hasNode(FlowNode[] nodes, FlowNode node)
     {
         if (child.parent !is null && node.parent !is null)
         {
-            if (child.parent.stageName == node.parent.stageName
-                && child.stageName == node.stageName
+            if (child.parent.stageId == node.parent.stageId
+                && child.stageId == node.stageId
                 && child.condition == node.condition)
             {
                 return true;
@@ -158,7 +158,7 @@ private bool hasNode(FlowNode[] nodes, FlowNode node)
         }
         else if (child.parent is null || node.parent is null)
         {
-            if (child.stageName == node.stageName && child.condition == node.condition)
+            if (child.stageId == node.stageId && child.condition == node.condition)
             {
                 return true;
             }
@@ -262,6 +262,6 @@ public FlowTree createFlowTree(FlowNode[] nodes, FlowNode parent)
         children ~= createFlowTree(nodes, node);
     }
 
-    FlowTree tree = FlowTree(parent.stageName, parent.condition, children);
+    FlowTree tree = FlowTree(parent.stageId, parent.condition, children);
     return tree;
 }

@@ -4,140 +4,153 @@ project:
 
 # stage tree chart: https://statik.munchii.me/img/:f5e35ec9-faea-4637-81eb-b677a6a81a4b
 stages:
-  - name: Stage 1
+  - id: stage1
+    name: Stage 1
     trigger:
       stage:
-        - name: Stage 1 Retry
+        - id: stage1-retry
           when: complete
     flow:
       steps:
         - name: Build
           run: dub build --compiler=ldc2 -b release
 
-  - name: Stage 1 Retry
+  - id: stage1-retry
+    name: Stage 1 Retry
     trigger:
       stage:
-        - name: Stage 1
+        - id: stage1
           when: failed
     flow:
       steps:
         - name: Retry Stage 1
           run: echo "Retrying Stage 1..."
           
-  - name: Stage 2
+  - id: stage2
+    name: Stage 2
     trigger:
       stage:
-        - name: Stage 1
+        - id: stage1
           when: started
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 3
+  - id: stage3
+    name: Stage 3
     trigger:
       stage:
-        - name: Stage 1
+        - id: stage1
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 4
+  - id: stage4
+    name: Stage 4
     trigger:
       stage:
-        - name: Stage 1
+        - id: stage1
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 5
+  - id: stage5
+    name: Stage 5
     trigger:
       stage:
-        - name: Stage 2
+        - id: stage2
           when: started
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 6
+  - id: stage6
+    name: Stage 6
     trigger:
       stage:
-        - name: Stage 2
+        - id: stage2
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 7
+  - id: stage7
+    name: Stage 7
     trigger:
       stage:
-        - name: Stage 2
+        - id: stage2
           when: failed
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 8
+  - id: stage8
+    name: Stage 8
     trigger:
       stage:
-        - name: Stage 3
+        - id: stage3
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 9
+  - id: stage9
+    name: Stage 9
     trigger:
       stage:
-        - name: Stage 3
+        - id: stage3
           when: skipped
-        - name: Stage 4
+        - id: stage4
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 10
+  - id: stage10
+    name: Stage 10
     trigger:
       stage:
-        - name: Stage 5
+        - id: stage5
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 11
+  - id: stage11
+    name: Stage 11
     trigger:
       stage:
-        - name: Stage 8
+        - id: stage8
           when: skipped
-        - name: Stage 9
+        - id: stage9
           when: complete
     flow:
       steps:
         - name: Do something
           run: echo "doing something..."
           
-  - name: Stage 12
+  - id: stage12
+    name: Stage 12
     trigger:
       stage:
-        - name: Stage 6
+        - id: stage6
           when: complete
-        - name: Stage 7
+        - id: stage7
           when: complete
-        - name: Stage 10
+        - id: stage10
           when: complete
-        - name: Stage 11
+        - id: stage11
           when: complete
     flow:
       steps:

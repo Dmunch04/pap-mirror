@@ -2,6 +2,21 @@ module pap.recipes.stages;
 
 import ymlmap;
 
+// TODO: it would be cool if we could eliminate the `id` field from `Stage` objects.
+// So instead of this:
+// ```
+// stages:
+//   - id: some-stage
+//     name: Some Stage
+//     ...
+// ```
+// we could have this:
+// ```
+// stages:
+//   some-stage:
+//     name: Some Stage
+// ```
+
 public struct StagesRecipe
 {
     /// The stages recipe. (Required)
@@ -12,9 +27,13 @@ public struct StagesRecipe
 
 public struct StageRecipe
 {
-    /// The name of the stage. (Required)
-    @Field("name")
+    /// The unique identifier of the stage. (Required)
+    @Field("id")
     @Required
+    string id;
+
+    /// The name of the stage. (Optional - defaults to stage id)
+    @Field("name")
     string name;
 
     /// The trigger recipe for the stage. (Optional)
@@ -69,10 +88,10 @@ public struct StageTriggerWatchRecipe
 
 public struct StageTriggerStageRecipe
 {
-    /// The name of the stage trigger. (Required)
-    @Field("name")
+    /// The id of the triggering stage. (Required)
+    @Field("id")
     @Required
-    string name;
+    string id;
 
     /// The condition to trigger the stage. (Required)
     @Field("when")
@@ -176,20 +195,20 @@ public bool validate(StagesRecipe recipe)
     ];
 
     bool failed;
-    string[] stageNames;
+    string[] stageIds;
 
     if (recipe.stages.length > 0)
     {
         foreach (stage; recipe.stages)
         {
             // TODO: step names?
-            if (stageNames.canFind(stage.name))
+            if (stageIds.canFind(stage.id))
             {
-                stderr.writefln("Cannot have stages with duplicate name '%s'", stage.name);
+                stderr.writefln("Cannot have stages with duplicate id '%s'", stage.id);
                 failed = true;
             }
 
-            stageNames ~= stage.name;
+            stageIds ~= stage.id;
 
             // Watch Trigger Validation
             if (stage.triggers.watch.length > 0)
@@ -198,12 +217,12 @@ public bool validate(StagesRecipe recipe)
                 {
                     if (watch.file != "" && watch.directory != "")
                     {
-                        stderr.writefln("Watch Trigger for '%s' must only have a file or a directory, not both!", stage.name);
+                        stderr.writefln("Watch Trigger for '%s' must only have a file or a directory, not both!", stage.id);
                         failed = true;
                     }
                     else if (watch.file == "" && watch.directory == "")
                     {
-                        stderr.writefln("Watch Trigger for '%s' must either have a file or a directory!", stage.name);
+                        stderr.writefln("Watch Trigger for '%s' must either have a file or a directory!", stage.id);
                         failed = true;
                     }
                 }
@@ -214,14 +233,14 @@ public bool validate(StagesRecipe recipe)
             {
                 foreach (stageTrigger; stage.triggers.stage)
                 {
-                    if (stageTrigger.name == "")
+                    if (stageTrigger.id == "")
                     {
-                        stderr.writefln("Stage Trigger for '%s' must have a name!", stage.name);
+                        stderr.writefln("Stage Trigger for '%s' must have an id field!", stage.id);
                         failed = true;
                     }
                     else if (!STAGE_TRIGGER_WHEN.canFind(stageTrigger.when))
                     {
-                        stderr.writefln("Stage Trigger for '%s' must have a valid when condition!", stage.name);
+                        stderr.writefln("Stage Trigger for '%s' must have a valid when condition!", stage.id);
                         failed = true;
                     }
                 }
@@ -243,8 +262,15 @@ public bool validate(StagesRecipe recipe)
             // Container Validation
             if (stage.container.engine != "" && !STAGE_CONTAINER_ENGINE.canFind(stage.container.engine))
             {
-                stderr.writefln("Container Engine for '%s' must be either 'docker' or 'podman'", stage.name);
+                stderr.writefln("Container Engine for '%s' must be either 'docker' or 'podman'", stage.id);
                 failed = true;
+            }
+
+            // Post-Processing
+            // If stage name not set, default it to the stage id
+            if (stage.name.length == 0)
+            {
+                stage.name = stage.id;
             }
         }
     }

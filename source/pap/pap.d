@@ -132,11 +132,11 @@ public class PapCLI
                 {
                     if (cmd.name !in this.commandMap)
                     {
-                        this.commandMap[cmd.name] = stage.name;
+                        this.commandMap[cmd.name] = stage.id;
                     }
                     else
                     {
-                        stderr.writeln("Command '%s' is already registered to stage '%s'", cmd.name, stage.name);
+                        stderr.writeln("Command '%s' is already registered to stage '%s'", cmd.name, stage.id);
                     }
                 }
             }
@@ -299,7 +299,7 @@ public int runStageCommand(string cmd, string[] args, StageRecipe[] stages = nul
     StageRecipe entryStage;
     foreach (stage; stages)
     {
-        if (stage.name == cmdMap[cmd])
+        if (stage.id == cmdMap[cmd])
         {
             entryStage = stage;
             break;
