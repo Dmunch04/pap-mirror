@@ -312,7 +312,7 @@ public int runStageCommand(string cmd, string[] args, StageRecipe[] stages = nul
     FlowNode[] nodes = createFlow(stages, entryStage);
     FlowTree flow = createFlowTree(nodes, nodes[0]);
 
-    writefln(flow.stageName);
+    writefln(flow.stageId);
 
     return EXIT_SUCCESS;
 }

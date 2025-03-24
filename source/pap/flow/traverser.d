@@ -16,25 +16,30 @@ public synchronized class TraverselState
 {
     private StageState[string] states;
 
-    StageState getState(string stageName)
+    StageState getState(string stageId)
     {
-        if (stageName !in this.states)
+        if (stageId !in this.states)
         {
-            this.states[stageName] = StageState.PENDING;
+            this.states[stageId] = StageState.PENDING;
         }
 
-        return this.states[stageName];
+        return this.states[stageId];
     }
 
-    void setState(string stageName, StageState state)
+    void setState(string stageId, StageState state)
     {
-        this.states[stageName] = state;
+        this.states[stageId] = state;
     }
 }
 
 public struct StageTask
 {
     public string stage;
+    FlowNodeCondition condition;
+}
+
+public struct StageQueueResult
+{
 }
 
 public class FlowTraverser
@@ -48,6 +53,7 @@ public class FlowTraverser
     private FlowTree nodeTree;
 
     private DList!StageTask[] queues;
+    private auto state = new shared(TraverselState);
 
     public this(StageRecipe entryStage, StageRecipe[] stages)
     {
@@ -59,49 +65,27 @@ public class FlowTraverser
 
         DList!StageTask cur;
         createTaskQueues(nodeTree, queues, cur);
-
-        import std.stdio : writeln, write;
-        import std.range;
-        writeln("[");
-        foreach (queue; queues)
-        {
-            write("[");
-            write(queue[].walkLength, "; ");
-            foreach (elem; queue[])
-            {
-                write(elem.stage, ", ");
-            }
-            writeln("],");
-        }
-        writeln("];");
-    }
-
-    // get in level order based on the parent/root stage.
-    // how would we go about recusive stages? stage 1 <-> stage 2. stage 1 is root, stage 2 is run but tree/flow ends there (can't go backwards because it doesn't know it).
-    // perhaps we should revert back to not allowing recursive flows (stage triggers). we could instead implement the `retry` section idea.
-    // question: is it bad to only support a linear flow? i could see the upside to having the ability to "travel backwards", but is it needed? what does other similar programs do?
-    // note: each stage's flow-steps can also have requirements, meaning that the method/function responsible for executing the stage/steps needs full context.
-    // note: a stage can only be triggered once while the flow is running.
-    // if a stage depends on 2 stages and both parent stages meets the trigger condition,
-    // the stage will only be triggered by the parent stage to first meet their condition.
-    private FlowTree[] getNextStages()
-    {
-        // level order traversel queue
-        return [];
     }
 
     public void traverse()
     {
         import std.parallelism : parallel;
-
-        auto state = new shared(TraverselState);
-
-        // execute stages in parrallel or concurrently
+        import std.algorithm : each;
+        import pap.flow.executor : executeStageQueue;
+        
+        queues.parallel.each!(queue => executeStageQueue(queue, state));
+        
+        // only execute the next stage if the state of the next stage is PENDING or FAILED?
     }
+
+    //package static bool executeStageQueue(DList!StageTask task)
+    //{
+    //    return true;
+    //}
 
     private void createTaskQueues(FlowTree node, ref DList!StageTask[] queues, ref DList!StageTask currentQueue)
     {
-        currentQueue.insertBack(StageTask(node.stageName));
+        currentQueue.insertBack(StageTask(node.stageId, node.condition));
 
         if (node.children.length == 0)
         {
@@ -111,7 +95,7 @@ public class FlowTraverser
         {
             foreach (child; node.children)
             {
-                createQs(child, queues, currentQueue.dup);
+                createTaskQueues(child, queues, currentQueue.dup);
             }
         }
 

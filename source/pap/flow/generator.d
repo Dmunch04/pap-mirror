@@ -146,7 +146,6 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
                     writeln(node.pathIdentifier, " ", flow.hasNode(node));
                     if (flow.hasNode(node)) return flow;
                     flow ~= node;
-                    //if (!flow.hasNode(node)) flow ~= node;
 
                     FlowNode[] children = createFlow(stages, stage, node, flow);
                     foreach (FlowNode child; children)
@@ -261,7 +260,7 @@ public bool hasRecursion(FlowNode[] nodes)
 public struct FlowTree
 {
     /// The name of the defined stage this node represents
-    public string stageName;
+    public string stageId;
     /// The condition for this node to be triggered. The condition is checked on the parent node
     public FlowNodeCondition condition;
     /// The node's direct children. This means the children that has a direct link to this node, and which their conditions will be checked on
