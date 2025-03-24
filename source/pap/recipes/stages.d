@@ -16,6 +16,8 @@ import ymlmap;
 //   some-stage:
 //     name: Some Stage
 // ```
+// 
+// TODO: multiple 'when's for StageTrigger so you don't need to add multiple times just for multiple conditions
 
 public struct StagesRecipe
 {

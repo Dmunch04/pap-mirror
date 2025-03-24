@@ -158,9 +158,11 @@ public class PapCLI
         {
             writeln(n.toString);
         }
+        //writeln(hasRecursion(nodes));
         //writeln();
         //FlowTree tree = createFlowTree(nodes, nodes[1]);
         //writeln(tree.children[0].stageName);
+        FlowTraverser traverser = new FlowTraverser(stages[0], stages);
 
         import std.stdio : readln;
         import std.string : strip;

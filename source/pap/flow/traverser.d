@@ -32,15 +32,22 @@ public synchronized class TraverselState
     }
 }
 
+public struct StageTask
+{
+    public string stage;
+}
+
 public class FlowTraverser
 {
+    import std.container : DList;
+
     private StageRecipe entryStage;
     private StageRecipe[] stages;
 
     private FlowNode[] nodes;
     private FlowTree nodeTree;
 
-    private int treeDepth;
+    private DList!StageTask[] queues;
 
     public this(StageRecipe entryStage, StageRecipe[] stages)
     {
@@ -49,6 +56,24 @@ public class FlowTraverser
 
         this.nodes = createFlow(stages, entryStage);
         this.nodeTree = createFlowTree(nodes, nodes[0]);
+
+        DList!StageTask cur;
+        createTaskQueues(nodeTree, queues, cur);
+
+        import std.stdio : writeln, write;
+        import std.range;
+        writeln("[");
+        foreach (queue; queues)
+        {
+            write("[");
+            write(queue[].walkLength, "; ");
+            foreach (elem; queue[])
+            {
+                write(elem.stage, ", ");
+            }
+            writeln("],");
+        }
+        writeln("];");
     }
 
     // get in level order based on the parent/root stage.
@@ -73,15 +98,23 @@ public class FlowTraverser
 
         // execute stages in parrallel or concurrently
     }
-    
-    public int[][] levelOrder(FlowTree root)
+
+    private void createTaskQueues(FlowTree node, ref DList!StageTask[] queues, ref DList!StageTask currentQueue)
     {
-        int[][] levels;
-        dfs(root, 0, levels);
-        return levels;
-    }
-    
-    public void dfs(FlowTree cur, int lvl, ref int[][] levels)
-    {
+        currentQueue.insertBack(StageTask(node.stageName));
+
+        if (node.children.length == 0)
+        {
+            queues ~= currentQueue.dup;
+        }
+        else
+        {
+            foreach (child; node.children)
+            {
+                createQs(child, queues, currentQueue.dup);
+            }
+        }
+
+        currentQueue.removeBack();
     }
 }

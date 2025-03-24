@@ -57,6 +57,23 @@ public class FlowNode
         this.condition = condition;
     }
 
+    @property
+    public string pathIdentifier()
+    {
+        import std.array : join;
+        import std.algorithm : reverse;
+
+        string[] parents;
+        FlowNode parentNode = parent;
+        while (parentNode !is null)
+        {
+            parents ~= parentNode.stageId;
+            parentNode = parentNode.parent;
+        }
+        
+        return join(reverse(parents), ".") ~ "." ~ stageId;
+    }
+
     override string toString() const
     {
         import std.conv : to;
@@ -98,7 +115,7 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
     // ROOT -> Stage 1 IF ROOT (entrypoint)
     // Stage 1 -> Stage 2 IF FAILED
     // Stage 2 -> Stage 1 IF COMPLETE
-    // 
+    //
     // we don't actually want this to be "recursive" or non-linear; we want it to be linear. we don't want to travel backwards.
     // instead we want to only move "forward" => forget this. explained below
 
@@ -113,6 +130,8 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
         flow ~= rootNode;
     }
 
+    import std.stdio : writeln;
+
     foreach (StageRecipe stage; stages)
     {
         if (stage.id == root.id) continue;
@@ -124,8 +143,10 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
                 if (trigger.id == root.id)
                 {
                     FlowNode node = new FlowNode(stage.id, rootNode, conditionFromString(trigger.when));
+                    writeln(node.pathIdentifier, " ", flow.hasNode(node));
                     if (flow.hasNode(node)) return flow;
                     flow ~= node;
+                    //if (!flow.hasNode(node)) flow ~= node;
 
                     FlowNode[] children = createFlow(stages, stage, node, flow);
                     foreach (FlowNode child; children)
@@ -147,6 +168,10 @@ private bool hasNode(FlowNode[] nodes, FlowNode node)
 {
     foreach (FlowNode child; nodes)
     {
+        if (child.pathIdentifier == node.pathIdentifier) return true;
+        if (node.parent !is null && node.parent.parent !is null && node.parent.parent.stageId == node.stageId) return true;
+    
+        /+
         if (child.parent !is null && node.parent !is null)
         {
             if (child.parent.stageId == node.parent.stageId
@@ -163,6 +188,7 @@ private bool hasNode(FlowNode[] nodes, FlowNode node)
                 return true;
             }
         }
+        +/
     }
 
     return false;
@@ -190,25 +216,17 @@ public FlowNode[] getDirectChildren(FlowNode[] nodes, FlowNode parent)
 
 public bool hasRecursion(FlowNode[] nodes)
 {
-    FlowNode root = nodes[0];
-    if (root.condition != FlowNodeCondition.ROOT)
+    string[string] relations;
+    foreach (node; nodes)
     {
-        root = null;
-    
-        foreach (node; nodes)
-        {
-            if (node.condition == FlowNodeCondition.ROOT)
-            {
-                root = node;
-            }
-        }
-        
-        if (root is null)
-        {
-            assert(0, "FATAL: something is wrong. could not find root node");
-        }
+        if (node.parent is null) continue;
+
+        if (node.stageId in relations && relations[node.stageId] == node.parent.stageId) return true;
+        if (node.parent.stageId in relations && relations[node.parent.stageId] == node.stageId) return true;
+
+        relations[node.stageId] = node.parent.stageId;
     }
-    
+
     // current idea: keep the "recursive" or backwards flow thing and then use this function to check it.
     // we can then either give a warning and skip it when we reach it, or find a good way to allow it.
     // perhaps it's possible for us to jump backwards. the only concern i have is the other child processes that depends on it.
@@ -217,7 +235,7 @@ public bool hasRecursion(FlowNode[] nodes)
     //        (started)  -> STAGE3 => already begun - does this matter?
     //        (failed)   -> STAGE1-RETRY
     //                                    (complete) <- STAGE1
-    // 
+    //
     // ^^ so let's say STAGE1 fails the first time. STAGE2 won't be triggered since it's waiting for STAGE1 to be completed.
     // STAGE3 will be triggered since STAGE1 had started, and STAGE1-RETRY will be started because STAGE1 failed.
     // this means that STAGE3 is now running and continueing down the flow/levels while STAGE2 is stuck waiting for STAGE1 which is now retrying
@@ -226,12 +244,12 @@ public bool hasRecursion(FlowNode[] nodes)
     // and therefor have to wait anyway. so perhaps this is acceptable. so the above would be okay. however it's important to keep track of which stages
     // has already been started (no longer pending) so it isn't triggered twice by a delayed stage completing. now of course in this instance STAGE1 will be triggered
     // until successful. so perhaps unless the state is PENDING or FAILED it shouldn't be triggered again? hmm
-    // 
+    //
     // STAGE1:       PENDING => STARTED => FAILED  => ??????? => ??????? => STARTED => ...
     // STAGE2:       PENDING => PENDING => PENDING => PENDING => PENDING => PENDING => PENDING
     // STAGE3:       PENDING => PENDING => STARTED => ...
     // STAGE1-RETRY: PENDING => PENDING => PENDING => STARTED => COMPLETE
-    
+
     return false;
 }
 
