@@ -2,21 +2,6 @@ module pap.recipes.stages;
 
 import ymlmap;
 
-// TODO: it would be cool if we could eliminate the `id` field from `Stage` objects.
-// So instead of this:
-// ```
-// stages:
-//   - id: some-stage
-//     name: Some Stage
-//     ...
-// ```
-// we could have this:
-// ```
-// stages:
-//   some-stage:
-//     name: Some Stage
-// ```
-// 
 // TODO: multiple 'when's for StageTrigger so you don't need to add multiple times just for multiple conditions
 
 public struct StagesRecipe
@@ -24,14 +9,11 @@ public struct StagesRecipe
     /// The stages recipe. (Required)
     @Field("stages")
     @Required
-    StageRecipe[] stages;
+    StageRecipe[string] stages;
 }
 
 public struct StageRecipe
 {
-    /// The unique identifier of the stage. (Required)
-    @Field("id")
-    @Required
     string id;
 
     /// The name of the stage. (Optional - defaults to stage id)

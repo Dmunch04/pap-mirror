@@ -130,8 +130,6 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
         flow ~= rootNode;
     }
 
-    import std.stdio : writeln;
-
     foreach (StageRecipe stage; stages)
     {
         if (stage.id == root.id) continue;
@@ -143,7 +141,6 @@ public FlowNode[] createFlow(StageRecipe[] stages, StageRecipe root, FlowNode ro
                 if (trigger.id == root.id)
                 {
                     FlowNode node = new FlowNode(stage.id, rootNode, conditionFromString(trigger.when));
-                    writeln(node.pathIdentifier, " ", flow.hasNode(node));
                     if (flow.hasNode(node)) return flow;
                     flow ~= node;
 

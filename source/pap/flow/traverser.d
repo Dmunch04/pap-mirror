@@ -101,4 +101,23 @@ public class FlowTraverser
 
         currentQueue.removeBack();
     }
+    
+    private void debugQueues()
+    {
+        import std.stdio : writeln, write;
+        import std.range;
+        
+        writeln("[");
+        foreach (queue; queues)
+        {
+            write("[");
+            write(queue[].walkLength, "; ");
+            foreach (elem; queue[])
+            {
+                write(elem.stage, ", ");
+            }
+            writeln("],");
+        }
+        writeln("];");
+    }
 }

@@ -4,7 +4,7 @@ project:
 
 # stage tree chart: https://statik.munchii.me/img/:f5e35ec9-faea-4637-81eb-b677a6a81a4b
 stages:
-  - id: stage1
+  stage1:
     name: Stage 1
     trigger:
       stage:
@@ -15,7 +15,7 @@ stages:
         - name: Build
           run: dub build --compiler=ldc2 -b release
 
-  - id: stage1-retry
+  stage1-retry:
     name: Stage 1 Retry
     trigger:
       stage:
@@ -26,7 +26,7 @@ stages:
         - name: Retry Stage 1
           run: echo "Retrying Stage 1..."
           
-  - id: stage2
+  stage2:
     name: Stage 2
     trigger:
       stage:
@@ -37,7 +37,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage3
+  stage3:
     name: Stage 3
     trigger:
       stage:
@@ -48,7 +48,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage4
+  stage4:
     name: Stage 4
     trigger:
       stage:
@@ -59,7 +59,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage5
+  stage5:
     name: Stage 5
     trigger:
       stage:
@@ -70,7 +70,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage6
+  stage6:
     name: Stage 6
     trigger:
       stage:
@@ -81,7 +81,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage7
+  stage7:
     name: Stage 7
     trigger:
       stage:
@@ -92,7 +92,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage8
+  stage8:
     name: Stage 8
     trigger:
       stage:
@@ -103,7 +103,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage9
+  stage9:
     name: Stage 9
     trigger:
       stage:
@@ -116,7 +116,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage10
+  stage10:
     name: Stage 10
     trigger:
       stage:
@@ -127,7 +127,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage11
+  stage11:
     name: Stage 11
     trigger:
       stage:
@@ -140,7 +140,7 @@ stages:
         - name: Do something
           run: echo "doing something..."
           
-  - id: stage12
+  stage12:
     name: Stage 12
     trigger:
       stage:

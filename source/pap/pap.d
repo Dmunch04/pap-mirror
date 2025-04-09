@@ -36,6 +36,8 @@ public class PapCLI
     private bool tryLoadConfig()
     {
         import std.file : exists;
+        import std.array : array;
+        import std.algorithm : mmap = map;
 
         Node root;
         if (exists("./pap.yml"))
@@ -79,6 +81,9 @@ public class PapCLI
 
         if (this.project.includes.length > 0)
         {
+            import std.range : chain;
+            import std.array : byPair, assocArray;
+
             foreach (file; this.project.includes)
             {
                 if (file.exists)
@@ -93,9 +98,25 @@ public class PapCLI
                         return false;
                     }
 
-                    stagesRecipe.stages ~= includeStages.stages;
+                    //stagesRecipe.stages ~= includeStages.stages;
+                    foreach (stage; includeStages.stages.byKeyValue)
+                    {
+                        if (stage.key in stagesRecipe.stages)
+                        {
+                            stderr.writeln("Stage '%s' already exists in the main configuration file", stage.key);
+                            return false;
+                        }
+                        
+                        stagesRecipe.stages[stage.key] = stage.value;
+                    }
+                    //stagesRecipe.stages = stagesRecipe.stages.byPair.chain(includeStages.stages.byPair).assocArray;
                 }
             }
+        }
+
+        foreach (stage; stagesRecipe.stages.byKeyValue)
+        {
+            stage.value.id = stage.key;
         }
 
         if (!stagesRecipe.validate())
@@ -103,7 +124,8 @@ public class PapCLI
             stderr.writeln("Config validation failed because of previous errors.");
             return false;
         }
-        this.stages = stagesRecipe.stages;
+
+        this.stages = stagesRecipe.stages.byKeyValue.mmap!(stage => stage.value).array;
 
         getWatchers();
         createCommandMap();
@@ -150,9 +172,10 @@ public class PapCLI
     {
         import std.algorithm : each;
         import std.stdio : writeln;
-
+        
         writeln("aa");
-        FlowNode[] nodes = createFlow(stages, stages[0]);
+        //FlowNode[] nodes = createFlow(stages, stages[0]);
+        FlowNode[] nodes = createFlow(stages, stages[7]);
         //nodes.each!(n => writeln(n.toString()));
         foreach (n; nodes)
         {
@@ -162,7 +185,7 @@ public class PapCLI
         //writeln();
         //FlowTree tree = createFlowTree(nodes, nodes[1]);
         //writeln(tree.children[0].stageName);
-        FlowTraverser traverser = new FlowTraverser(stages[0], stages);
+        FlowTraverser traverser = new FlowTraverser(stages[7], stages);
 
         import std.stdio : readln;
         import std.string : strip;

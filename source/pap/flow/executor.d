@@ -6,12 +6,23 @@ import pap.flow.traverser : StageState, TraverselState, StageTask, StageQueueRes
 
 public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) state)
 {
+    // is while-true loop better?
+    StageTask previous;
     foreach (StageTask stageTask; queue[])
     {
         StageState stageState = state.getState(stageTask.stage);
         if (stageState == StageState.PENDING)
         {
-            // get parent???
+            // while loop? until condition is met
+            //if (state.getState(previous.stage) == stageTask.condition)
+            //{
+                //state.setState(stageTask.stage, StageState.STARTED);
+                // execute stage
+            //}
+            //else
+            {
+                return false;
+            }
         
             // check condition
             // set state to STARTED
@@ -25,6 +36,8 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
         {
             return false;
         }
+        
+        previous = stageTask;
     }
 
     return true;
