@@ -6,10 +6,30 @@ import pap.flow.generator;
 public enum StageState
 {
     PENDING,
-    RUNNING,
+    COMPLETE,
     FAILED,
-    COMPLETED,
-    CANCELED
+    STARTED,
+    CANCELED,
+    SKIPPED
+}
+
+public bool compareStateToCondition(StageState state, FlowNodeCondition cond)
+{
+    switch (state)
+    {
+        case StageState.STARTED:
+            return cond == FlowNodeCondition.STARTED;
+        case StageState.COMPLETE:
+            return cond == FlowNodeCondition.COMPLETE;
+        case StageState.FAILED:
+            return cond == FlowNodeCondition.FAILED;
+        case StageState.CANCELED:
+            return cond == FlowNodeCondition.CANCELED;
+        case StageState.SKIPPED:
+            return cond == FlowNodeCondition.SKIPPED;
+        default:
+            return false;
+    }
 }
 
 public synchronized class TraverselState
@@ -65,16 +85,24 @@ public class FlowTraverser
 
         DList!StageTask cur;
         createTaskQueues(nodeTree, queues, cur);
+        debug debugQueues();
     }
 
     public void traverse()
     {
         import std.parallelism : parallel;
-        import std.algorithm : each;
-        import pap.flow.executor : executeStageQueue;
+        import std.algorithm : each, minElement, remove, countUntil;
+        import pap.flow.executor : executeStageQueue, test;
+
+        DList!StageTask[] qs = this.queues.dup;
+        DList!StageTask firstQ = qs.minElement!"a[].walkLength";
+        qs = qs.remove(qs.countUntil!(q => q == firstQ));
+
+        //executeStageQueue(queue, state);
         
-        queues.parallel.each!(queue => executeStageQueue(queue, state));
-        
+        //queues.parallel.each!(queue => executeStageQueue(queue, state));
+        queues.parallel.each!(queue => test(queue, state, stages));
+
         // only execute the next stage if the state of the next stage is PENDING or FAILED?
     }
 
@@ -101,22 +129,46 @@ public class FlowTraverser
 
         currentQueue.removeBack();
     }
-    
-    private void debugQueues()
+
+    private void debugQueues(DList!StageTask[] queues = null)
     {
+        if (queues is null)
+        {
+            queues = this.queues;
+        }
+    
         import std.stdio : writeln, write;
         import std.range;
-        
-        writeln("[");
+
+        assert(queues.length > 0);
+
+        writeln("stageQueues = [");
+        size_t i;
         foreach (queue; queues)
         {
-            write("[");
-            write(queue[].walkLength, "; ");
+            size_t j;
+            size_t l = queue[].walkLength;
+
+            write("\t[");
+            write(l, "; ");
             foreach (elem; queue[])
             {
-                write(elem.stage, ", ");
+                write(elem.stage);
+                if (j++ < l - 1)
+                {
+                    write(", ");
+                }
             }
-            writeln("],");
+            write("]");
+
+            if ((i++) + 1 < queues.length)
+            {
+                writeln(",");
+            }
+            else
+            {
+                writeln();
+            }
         }
         writeln("];");
     }

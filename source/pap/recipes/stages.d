@@ -261,3 +261,16 @@ public bool validate(StagesRecipe recipe)
 
     return !failed;
 }
+
+public StageRecipe getStageById(StageRecipe[] recipes, string id)
+{
+    foreach (recipe; recipes)
+    {
+        if (recipe.id == id)
+        {
+            return recipe;
+        }
+    }
+
+    assert(0, "could not find stage with id '" ~ id ~ "'");
+}

@@ -173,19 +173,20 @@ public class PapCLI
         import std.algorithm : each;
         import std.stdio : writeln;
         
-        writeln("aa");
+        //writeln("aa");
         //FlowNode[] nodes = createFlow(stages, stages[0]);
-        FlowNode[] nodes = createFlow(stages, stages[7]);
+        FlowNode[] nodes = createFlow(stages, stages.getStageById("stage1"));
         //nodes.each!(n => writeln(n.toString()));
-        foreach (n; nodes)
-        {
-            writeln(n.toString);
-        }
+        //foreach (n; nodes)
+        //{
+        //    writeln(n.toString);
+        //}
         //writeln(hasRecursion(nodes));
         //writeln();
         //FlowTree tree = createFlowTree(nodes, nodes[1]);
         //writeln(tree.children[0].stageName);
         FlowTraverser traverser = new FlowTraverser(stages[7], stages);
+        traverser.traverse();
 
         import std.stdio : readln;
         import std.string : strip;
