@@ -19,6 +19,10 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
     // ^^ however if the sorting is really the problem, then it seems like this is not as robust as i'd hoped.
     // ^^^ sorting it backwards (long to small), instead of small to long, actually seems to work haha. perhaps it's because there's something
     // ^^^ wrong with that specific queue? because it's so short? because it's "recursive"? i have no idea. more testing is needed.
+    // 
+    // TODO: inside flow/generator.d i explained how the "recursive" should really be done. like stage1 <-> stage1-retry, however the current queue for those looks like:
+    // 0: stage1 =(failed)> 1: stage1-retry
+    // but if stage1 fails and triggers stage1-retry, then how would stage1-retry trigger stage1 again after completing? the queue ends there so?
     master: foreach (StageTask stageTask; queue[])
     {
         currentState = state.getState(stageTask.stage);
@@ -82,6 +86,14 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
             // i suppose not since the next stage might be dependent on this stage failing.
             // but what about the stage after that? the next stage would be skipped, and i suppose the next stage would be skipped too.
             // is this just fine then?
+            // 
+            // ^^ actually as discussed in flow/generator.d: (quote)
+            // however it's important to keep track of which stages
+            // has already been started (no longer pending) so it isn't triggered twice by a delayed stage completing. now of course in this instance STAGE1 will be triggered
+            // until successful. so perhaps unless the state is PENDING or FAILED it shouldn't be triggered again? hmm
+            // (quote-end), we should be able to run a failed stage again, however it should only be if it has been triggered. so again how would the queue:
+            // 0: stage1 =(failed)> 1: stage1-retry
+            // work out?
             
             continue master;
         }
