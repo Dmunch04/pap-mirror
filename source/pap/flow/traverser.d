@@ -15,6 +15,15 @@ public enum StageState
 
 public bool compareStateToCondition(StageState state, FlowNodeCondition cond)
 {
+    // If the condition is for the previous stage to have started, but it's state changes before the check is made,
+    // we just to need to check if the stage has been started (previously or now).
+    // TLDR: it doesn't need to have the 'STARTED' state in this case.
+    // TODO: More? (Other than 'PENDING'. Not sure if 'FAILED' should also be added?)
+    if (cond == FlowNodeCondition.STARTED && state != StageState.PENDING)
+    {
+        return true;
+    }
+
     switch (state)
     {
         case StageState.STARTED:
@@ -36,7 +45,7 @@ public synchronized class TraverselState
 {
     private StageState[string] states;
 
-    StageState getState(string stageId)
+    public StageState getState(string stageId)
     {
         if (stageId !in this.states)
         {
@@ -46,9 +55,20 @@ public synchronized class TraverselState
         return this.states[stageId];
     }
 
-    void setState(string stageId, StageState state)
+    public void setState(string stageId, StageState state)
     {
         this.states[stageId] = state;
+    }
+    
+    debug public bool testStates(int i)
+    {
+        import std.stdio : writeln;
+        import std.conv : to;
+    
+        if (this.states.length != i) return false;
+       
+        writeln(this.states.to!string);
+        return true;
     }
 }
 
@@ -90,7 +110,7 @@ public class FlowTraverser
 
     public void traverse()
     {
-        import std.parallelism : parallel;
+        import std.parallelism : parallel, taskPool, task;
         import std.algorithm : each, minElement, remove, countUntil;
         import pap.flow.executor : executeStageQueue, test;
 
@@ -98,10 +118,23 @@ public class FlowTraverser
         DList!StageTask firstQ = qs.minElement!"a[].walkLength";
         qs = qs.remove(qs.countUntil!(q => q == firstQ));
 
-        //executeStageQueue(queue, state);
+        //test(firstQ, state, stages);
+        //DList!StageTask[] fq = [firstQ];
+        //fq.parallel.each!(queue => test(queue, state, stages));
+        //qs.parallel.each!(queue => test(queue, state, stages));
         
-        //queues.parallel.each!(queue => executeStageQueue(queue, state));
+        //int i = 0;
         queues.parallel.each!(queue => test(queue, state, stages));
+        
+        debug
+        {
+            bool success = false;
+            do
+            {
+                success = state.testStates(13);
+            }
+            while (!success);
+        }
 
         // only execute the next stage if the state of the next stage is PENDING or FAILED?
     }
@@ -136,7 +169,7 @@ public class FlowTraverser
         {
             queues = this.queues;
         }
-    
+
         import std.stdio : writeln, write;
         import std.range;
 

@@ -9,6 +9,7 @@ import pap.flow.traverser : StageState, TraverselState, StageTask, StageQueueRes
 public bool test(DList!StageTask queue, ref shared(TraverselState) state, StageRecipe[] stages)
 {
     import std.stdio : writeln;
+    import std.conv : to;
 
     StageTask previous;
     StageState currentState;
@@ -19,49 +20,71 @@ public bool test(DList!StageTask queue, ref shared(TraverselState) state, StageR
     //        previous = queue.front;
     //    }
     //}
-    
-    foreach (StageTask stageTask; queue[])
+
+    //writeln("beginning stage queue: ", i);
+    // if current state has `STARTED` condition and previous stage finished before the current check?
+    master: foreach (StageTask stageTask; queue[])
     {
         currentState = state.getState(stageTask.stage);
+
         if (currentState == StageState.PENDING)
         {
             state.setState(stageTask.stage, StageState.STARTED);
-        
+
             int retries;
             while (currentState != StageState.COMPLETE)
             {
-                if (retries > 3)
+                if (retries > 2048)
                 {
-                    state.setState(stageTask.stage, StageState.FAILED);
-                    return false;
+                    state.setState(stageTask.stage, StageState.SKIPPED);
+                    continue master;
                 }
-                
-                //writeln(previous.stage.length <= 0);
-                //writeln(stageTask.condition == FlowNodeCondition.ROOT);
-                //writeln(compareStateToCondition(state.getState(previous.stage), stageTask.condition));
+
                 if (previous.stage.length <= 0 || stageTask.condition == FlowNodeCondition.ROOT || compareStateToCondition(state.getState(previous.stage), stageTask.condition))
                 {
                     state.setState(stageTask.stage, StageState.STARTED);
-                    
+
                     StageRecipe stage = stages.getStageById(stageTask.stage);
-                    writeln("Started stage: " ~ stage.name);
-                    state.setState(stageTask.stage, StageState.COMPLETE);
-                    currentState = StageState.COMPLETE;
-                    
+
                     // execute stage
-                    // check condition
-                    // set state to COMPLETE
-                
-                    continue;
+                    
+                    // if execution went bad (return false or something)
+                    // set state to FAILED
+                    // else state to COMPLETE
+                    state.setState(stageTask.stage, StageState.COMPLETE);
+
+                    continue master;
                 }
-                
+
+                currentState = state.getState(stageTask.stage);
                 retries++;
             }
         }
         
+        if (currentState == StageState.STARTED)
+        {
+            while (currentState == StageState.STARTED)
+            {
+                currentState = state.getState(stageTask.stage);
+            }
+            
+            continue master;
+        }
+        
+        if (currentState == StageState.FAILED)
+        {
+            // what to do here?
+            // like retry? should the rest of the chain/queue be canceled?
+            // i suppose not since the next stage might be dependent on this stage failing.
+            // but what about the stage after that? the next stage would be skipped, and i suppose the next stage would be skipped too.
+            // is this just fine then?
+            
+            continue master;
+        }
+
         previous = stageTask;
     }
-    
+
     return true;
 }
 
@@ -84,7 +107,7 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
             {
                 return false;
             }
-        
+
             // check condition
             // set state to STARTED
             // execute stage
@@ -97,7 +120,7 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
         {
             return false;
         }
-        
+
         previous = stageTask;
     }
 
