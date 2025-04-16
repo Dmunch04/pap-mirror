@@ -59,14 +59,14 @@ public synchronized class TraverselState
     {
         this.states[stageId] = state;
     }
-    
+
     debug public bool testStates(int i)
     {
         import std.stdio : writeln;
         import std.conv : to;
-    
+
         if (this.states.length != i) return false;
-       
+
         writeln(this.states.to!string);
         return true;
     }
@@ -110,22 +110,26 @@ public class FlowTraverser
 
     public void traverse()
     {
-        import std.parallelism : parallel, taskPool, task;
-        import std.algorithm : each, minElement, remove, countUntil;
-        import pap.flow.executor : executeStageQueue, test;
+        import std.parallelism : parallel;
+        import std.algorithm : each, sort;
+        import pap.flow.executor : executeStageQueue;
+        import std.array : array;
 
-        DList!StageTask[] qs = this.queues.dup;
-        DList!StageTask firstQ = qs.minElement!"a[].walkLength";
-        qs = qs.remove(qs.countUntil!(q => q == firstQ));
+        DList!StageTask[] sorted = this.queues.dup.sort!("a[].walkLength > b[].walkLength").array;
 
+        //queues.parallel.each!(queue => executeStageQueue(queue, state, stages));
+        sorted.parallel.each!(queue => executeStageQueue(queue, state, stages));
+        
+        //import std.algorithm : minElement, remove, countUntil;
+        //DList!StageTask[] qs = this.queues.dup;
+        //DList!StageTask firstQ = qs.minElement!"a[].walkLength";
+        //qs = qs.remove(qs.countUntil!(q => q == firstQ));
+        
         //test(firstQ, state, stages);
         //DList!StageTask[] fq = [firstQ];
         //fq.parallel.each!(queue => test(queue, state, stages));
         //qs.parallel.each!(queue => test(queue, state, stages));
-        
-        //int i = 0;
-        queues.parallel.each!(queue => test(queue, state, stages));
-        
+
         debug
         {
             bool success = false;
@@ -135,14 +139,7 @@ public class FlowTraverser
             }
             while (!success);
         }
-
-        // only execute the next stage if the state of the next stage is PENDING or FAILED?
     }
-
-    //package static bool executeStageQueue(DList!StageTask task)
-    //{
-    //    return true;
-    //}
 
     private void createTaskQueues(FlowTree node, ref DList!StageTask[] queues, ref DList!StageTask currentQueue)
     {
@@ -163,7 +160,7 @@ public class FlowTraverser
         currentQueue.removeBack();
     }
 
-    private void debugQueues(DList!StageTask[] queues = null)
+    debug private void debugQueues(DList!StageTask[] queues = null)
     {
         if (queues is null)
         {

@@ -6,56 +6,60 @@ import pap.recipes.stages : StageRecipe, getStageById;
 import pap.flow.generator : FlowNodeCondition;
 import pap.flow.traverser : StageState, TraverselState, StageTask, StageQueueResult, compareStateToCondition;
 
-public bool test(DList!StageTask queue, ref shared(TraverselState) state, StageRecipe[] stages)
-{
-    import std.stdio : writeln;
-    import std.conv : to;
+private const(int) MAX_RETRIES = 4096; // 2048?
 
+public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) state, StageRecipe[] stages)
+{
     StageTask previous;
     StageState currentState;
-    //while (true)
-    //{
-    //    if (previous.stage.length <= 0)
-    //    {
-    //        previous = queue.front;
-    //    }
-    //}
-
-    //writeln("beginning stage queue: ", i);
-    // if current state has `STARTED` condition and previous stage finished before the current check?
+    
+    // TODO: something is wrong here; sometimes (but only sometimes) 'stage1-retry' isn't skipped but instead completed? why is that??
+    // ^^ it might have something to do with the sorting of the queues. although not sure. but after having sorted the DList![] array
+    // ^^ before passing it to the parallel task, it most of the times worked (skipped) but now it always failes (completed).
+    // ^^ however if the sorting is really the problem, then it seems like this is not as robust as i'd hoped.
+    // ^^^ sorting it backwards (long to small), instead of small to long, actually seems to work haha. perhaps it's because there's something
+    // ^^^ wrong with that specific queue? because it's so short? because it's "recursive"? i have no idea. more testing is needed.
     master: foreach (StageTask stageTask; queue[])
     {
         currentState = state.getState(stageTask.stage);
-
+    
         if (currentState == StageState.PENDING)
         {
-            state.setState(stageTask.stage, StageState.STARTED);
-
+            // TODO: has it really started here? wouldn't it still technically be pending since the check for stage condition hasn't been made?
+            //state.setState(stageTask.stage, StageState.STARTED);
+    
             int retries;
             while (currentState != StageState.COMPLETE)
             {
-                if (retries > 2048)
+                if (retries > MAX_RETRIES)
                 {
                     state.setState(stageTask.stage, StageState.SKIPPED);
                     continue master;
                 }
-
+    
                 if (previous.stage.length <= 0 || stageTask.condition == FlowNodeCondition.ROOT || compareStateToCondition(state.getState(previous.stage), stageTask.condition))
                 {
                     state.setState(stageTask.stage, StageState.STARTED);
-
+    
                     StageRecipe stage = stages.getStageById(stageTask.stage);
-
+    
                     // execute stage
+                    StageExecutionResult result = stage.execute();
                     
-                    // if execution went bad (return false or something)
-                    // set state to FAILED
-                    // else state to COMPLETE
+                    if (!result.success)
+                    {
+                        state.setState(stageTask.stage, StageState.FAILED);
+                    }
+                    else
+                    {
+                        state.setState(stageTask.stage, StageState.COMPLETE);
+                    }
+                    
                     state.setState(stageTask.stage, StageState.COMPLETE);
-
+    
                     continue master;
                 }
-
+    
                 currentState = state.getState(stageTask.stage);
                 retries++;
             }
@@ -81,48 +85,28 @@ public bool test(DList!StageTask queue, ref shared(TraverselState) state, StageR
             
             continue master;
         }
-
+    
         previous = stageTask;
     }
-
+    
     return true;
 }
 
-public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) state)
+public struct StageExecutionResult
 {
-    // is while-true loop better?
-    StageTask previous;
-    foreach (StageTask stageTask; queue[])
-    {
-        StageState stageState = state.getState(stageTask.stage);
-        if (stageState == StageState.PENDING)
-        {
-            // while loop? until condition is met
-            //if (state.getState(previous.stage) == stageTask.condition)
-            //{
-                //state.setState(stageTask.stage, StageState.STARTED);
-                // execute stage
-            //}
-            //else
-            {
-                return false;
-            }
+    /// The ID of the stage that was executed.
+    string stageId;
+    /// Whether the stage was executed successfully.
+    bool success;
+    
+    /// The name of the step that failed, if any.
+    string failedStep;
+    /// The error message, if any.
+    string errorMessage;
+}
 
-            // check condition
-            // set state to STARTED
-            // execute stage
-        }
-        else if (stageState == StageState.FAILED)
-        {
-            // ??
-        }
-        else
-        {
-            return false;
-        }
-
-        previous = stageTask;
-    }
-
-    return true;
+public StageExecutionResult execute(StageRecipe stage)
+{
+    // TODO: execute each step
+    return StageExecutionResult(stage.id, true, "");
 }
