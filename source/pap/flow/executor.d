@@ -12,26 +12,27 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
 {
     StageTask previous;
     StageState currentState;
-    
+
     // TODO: something is wrong here; sometimes (but only sometimes) 'stage1-retry' isn't skipped but instead completed? why is that??
     // ^^ it might have something to do with the sorting of the queues. although not sure. but after having sorted the DList![] array
     // ^^ before passing it to the parallel task, it most of the times worked (skipped) but now it always failes (completed).
     // ^^ however if the sorting is really the problem, then it seems like this is not as robust as i'd hoped.
     // ^^^ sorting it backwards (long to small), instead of small to long, actually seems to work haha. perhaps it's because there's something
     // ^^^ wrong with that specific queue? because it's so short? because it's "recursive"? i have no idea. more testing is needed.
-    // 
+    // ^^^^ nevermind; even after sorting it backwards it still fails. so not sure what is going on haha
+    //
     // TODO: inside flow/generator.d i explained how the "recursive" should really be done. like stage1 <-> stage1-retry, however the current queue for those looks like:
     // 0: stage1 =(failed)> 1: stage1-retry
     // but if stage1 fails and triggers stage1-retry, then how would stage1-retry trigger stage1 again after completing? the queue ends there so?
     master: foreach (StageTask stageTask; queue[])
     {
         currentState = state.getState(stageTask.stage);
-    
+
         if (currentState == StageState.PENDING)
         {
             // TODO: has it really started here? wouldn't it still technically be pending since the check for stage condition hasn't been made?
             //state.setState(stageTask.stage, StageState.STARTED);
-    
+
             int retries;
             while (currentState != StageState.COMPLETE)
             {
@@ -40,16 +41,16 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
                     state.setState(stageTask.stage, StageState.SKIPPED);
                     continue master;
                 }
-    
+
                 if (previous.stage.length <= 0 || stageTask.condition == FlowNodeCondition.ROOT || compareStateToCondition(state.getState(previous.stage), stageTask.condition))
                 {
                     state.setState(stageTask.stage, StageState.STARTED);
-    
+
                     StageRecipe stage = stages.getStageById(stageTask.stage);
-    
+
                     // execute stage
                     StageExecutionResult result = stage.execute();
-                    
+
                     if (!result.success)
                     {
                         state.setState(stageTask.stage, StageState.FAILED);
@@ -58,27 +59,25 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
                     {
                         state.setState(stageTask.stage, StageState.COMPLETE);
                     }
-                    
-                    state.setState(stageTask.stage, StageState.COMPLETE);
-    
+
                     continue master;
                 }
-    
+
                 currentState = state.getState(stageTask.stage);
                 retries++;
             }
         }
-        
+
         if (currentState == StageState.STARTED)
         {
             while (currentState == StageState.STARTED)
             {
                 currentState = state.getState(stageTask.stage);
             }
-            
+
             continue master;
         }
-        
+
         if (currentState == StageState.FAILED)
         {
             // what to do here?
@@ -86,21 +85,21 @@ public bool executeStageQueue(DList!StageTask queue, ref shared(TraverselState) 
             // i suppose not since the next stage might be dependent on this stage failing.
             // but what about the stage after that? the next stage would be skipped, and i suppose the next stage would be skipped too.
             // is this just fine then?
-            // 
+            //
             // ^^ actually as discussed in flow/generator.d: (quote)
-            // however it's important to keep track of which stages
-            // has already been started (no longer pending) so it isn't triggered twice by a delayed stage completing. now of course in this instance STAGE1 will be triggered
-            // until successful. so perhaps unless the state is PENDING or FAILED it shouldn't be triggered again? hmm
+            // however it's important to keep track of which stages has already been started (no longer pending) so it isn't triggered twice by a delayed stage completing.
+            // now of course in this instance STAGE1 will be triggered until successful.
+            // so perhaps unless the state is PENDING or FAILED it shouldn't be triggered again? hmm
             // (quote-end), we should be able to run a failed stage again, however it should only be if it has been triggered. so again how would the queue:
             // 0: stage1 =(failed)> 1: stage1-retry
             // work out?
-            
+
             continue master;
         }
-    
+
         previous = stageTask;
     }
-    
+
     return true;
 }
 
@@ -110,7 +109,7 @@ public struct StageExecutionResult
     string stageId;
     /// Whether the stage was executed successfully.
     bool success;
-    
+
     /// The name of the step that failed, if any.
     string failedStep;
     /// The error message, if any.
@@ -119,6 +118,105 @@ public struct StageExecutionResult
 
 public StageExecutionResult execute(StageRecipe stage)
 {
+    import std.stdio : writeln;
+    import pap.recipes : StageFlowStepRecipe, StageFlowStepRequireRecipe;
+
+    // TODO: container?
     // TODO: execute each step
+
+    foreach (StageFlowStepRecipe step; stage.flow.steps)
+    {
+        // TODO: check this requirement
+        StageFlowStepRequireRecipe require = step.require;
+        
+        // TODO: handle 'uses' action
+        if (step.uses.length > 0) {}
+        
+        if (step.run.length > 0)
+        {
+            CommandResult result = execCmd(step.run.splitCmd);
+            writeln(result.stdout);
+        }
+        
+        continue;
+    }
+
     return StageExecutionResult(stage.id, true, "");
+}
+
+package struct CommandResult
+{
+    /// The exit code of the command.
+    int exitCode;
+    /// The output of the command.
+    string stdout;
+    /// The error output of the command.
+    string stderr;
+}
+
+package CommandResult execCmd(string[] cmd)
+{
+    import std.stdio : writeln;
+    import std.process : pipeProcess, wait;
+    import std.array : join;
+
+    // program halts? nothing is happening. the result is never returned and program is just waiting
+    // and since it's happening already to stage1, not other stages are being executed.
+    auto p = pipeProcess(cmd);
+    p.stdin.close();
+
+    string stdout = p.stdout.byLineCopy.join("\n");
+    string stderr = p.stderr.byLineCopy.join("\n");
+    int exitCode = wait(p.pid);
+
+    return CommandResult(exitCode, stdout, stderr);
+}
+
+package string[] splitCmd(string cmd)
+{
+    import std.array : appender;
+    import std.string : representation;
+    
+    auto result = appender!(string[])();
+    auto currentArg = appender!(char[])();
+    char inQuotes = '\0';
+    
+    foreach (immutable char c; cmd.representation)
+    {
+        if (inQuotes == '\0')
+        {
+            if (c == '\'' || c == '"')
+            {
+                inQuotes = c;
+                currentArg.put(c);
+            }
+            else if (c == ' ')
+            {
+                if (currentArg.data.length > 0)
+                {
+                    result.put(currentArg.data.idup);
+                    currentArg.clear();
+                }
+            }
+            else
+            {
+                currentArg.put(c);
+            }
+        }
+        else
+        {
+            currentArg.put(c);
+            if (c == inQuotes)
+            {
+                inQuotes = '\0';
+            }
+        }
+    }
+    
+    if (currentArg.data.length > 0)
+    {
+        result.put(currentArg.data.idup);
+    }
+    
+    return result.data;
 }
